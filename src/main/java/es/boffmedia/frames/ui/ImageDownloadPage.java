@@ -236,8 +236,13 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
 
             try {
                 boolean removed = FileHelper.removeImageState(sizeKey, stateKey);
-                if (removed) player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Imagen eliminada y estado removido: " + stateKey));
-                else player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No se encontró el estado o no se pudo eliminar: " + stateKey));
+                if (removed) {
+                    player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Imagen eliminada y estado removido: " + stateKey));
+                    // Refresh UI: close current page and reopen a fresh one so the list updates
+                    this.close();
+                    ImageDownloadPage page = new ImageDownloadPage(player.getPlayerRef(), this.targetWorld, this.targetBlock);
+                    player.getPageManager().openCustomPage(player.getReference(), player.getReference().getStore(), page);
+                } else player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No se encontró el estado o no se pudo eliminar: " + stateKey));
             } catch (IOException e) {
                 player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error al eliminar la imagen: " + e.getMessage()));
             }
