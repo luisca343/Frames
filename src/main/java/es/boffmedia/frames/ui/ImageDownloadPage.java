@@ -24,6 +24,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import es.boffmedia.frames.FileHelper;
 import es.boffmedia.frames.Frames;
+import es.boffmedia.frames.PermissionsUtil;
 import es.boffmedia.frames.interactions.UseFrameInteraction;
 
 import javax.annotation.Nonnull;
@@ -74,6 +75,12 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
         try {
             // Determine sizeKey for the target block (fall back to "1x1")
             String sizeKey = "1x1";
+            // Determine whether the current player can delete states
+            Player currentPlayerForPerms = store.getComponent(ref, Player.getComponentType());
+            boolean canDelete = false;
+            try {
+                canDelete = currentPlayerForPerms != null && PermissionsUtil.canDeleteFrames(currentPlayerForPerms);
+            } catch (Exception ignored) {}
             try {
                 long chunkIndex = com.hypixel.hytale.math.util.ChunkUtil.indexChunkFromBlock(this.targetBlock.x, this.targetBlock.z);
                 WorldChunk chunk = this.targetWorld.getChunkIfInMemory(chunkIndex);
@@ -132,9 +139,13 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                                 // Bind the Apply button for this specific instance
                                 uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, instancePrefix + " #ApplyButton",
                                     new EventData().append("Action", "Apply").append("StateKey", key), false);
-                                // Bind the Delete button for this specific instance
+
+                                // Set visibility for the Delete button based on perms and bind only if allowed
+                                uiCommandBuilder.set(instancePrefix + " #DeleteButton.Visible", canDelete);
+                                if (canDelete) {
                                 uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, instancePrefix + " #DeleteButton",
                                     new EventData().append("Action", "Delete").append("StateKey", key), false);
+                                }
                         }
                     }
                 }
