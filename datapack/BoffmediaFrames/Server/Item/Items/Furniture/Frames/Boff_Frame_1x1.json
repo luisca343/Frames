@@ -1,7 +1,7 @@
 {
   "TranslationProperties": {
-    "Name": "frames.frame_2x2.name",
-    "Description": "frames.frame_2x2.description"
+    "Name": "frames.frame_1x1.name",
+    "Description": "frames.frame_1x1.description"
   },
   "Categories": [
     "Blocks.Deco"
@@ -11,13 +11,13 @@
     "Material": "Solid",
     "DrawType": "Model",
     "Opacity": "Transparent",
-    "CustomModel": "Blocks/Frames/Frame_2x2.blockymodel",
+    "CustomModel": "Blocks/Frames/Frame_1x1.blockymodel",
     "Flags": {
       "IsUsable": true
     },
     "CustomModelTexture": [
       {
-        "Texture": "Blocks/Frames/frame_2x2.png"
+        "Texture": "Blocks/Frames/frame.png"
       }
     ],
     "HitboxType": "Painting",
@@ -43,7 +43,7 @@
           "InteractionHint": "frames.use_hint",
           "CustomModelTexture": [
             {
-              "Texture": "Blocks/Frames/frame_2x2.png"
+              "Texture": "Blocks/Frames/frame.png"
             }
           ]
         }
