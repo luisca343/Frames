@@ -8,6 +8,11 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.math.util.ChunkUtil;
+import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import com.hypixel.hytale.protocol.BlockPosition;
 import java.io.IOException;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -67,7 +72,28 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
         // Populate existing image states into the UI list (if present in JSON)
         final String statesListRef = "#StatesList";
         try {
-            org.bson.BsonDocument doc = FileHelper.loadOrCreateDocument();
+            // Determine sizeKey for the target block (fall back to "1x1")
+            String sizeKey = "1x1";
+            try {
+                long chunkIndex = com.hypixel.hytale.math.util.ChunkUtil.indexChunkFromBlock(this.targetBlock.x, this.targetBlock.z);
+                WorldChunk chunk = this.targetWorld.getChunkIfInMemory(chunkIndex);
+                if (chunk != null) {
+                    BlockType current = chunk.getBlockType(this.targetBlock.x, this.targetBlock.y, this.targetBlock.z);
+                    if (current != null) {
+                        String id = current.getId();
+                        if (id != null) {
+                            java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+)x(\\d+)").matcher(id);
+                            if (m.find()) {
+                                int w = Integer.parseInt(m.group(1));
+                                int h = Integer.parseInt(m.group(2));
+                                sizeKey = (Math.max(1, w)) + "x" + (Math.max(1, h));
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            org.bson.BsonDocument doc = FileHelper.loadOrCreateDocument(sizeKey);
             if (doc != null && doc.containsKey("BlockType")) {
                 org.bson.BsonDocument blockType = doc.getDocument("BlockType");
                 if (blockType.containsKey("State")) {
@@ -95,7 +121,7 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
 
                             String escapedTex = texture.replace("\"", "\\\"");
 
-                            // Extract filename only from texture path (e.g. Blocks/Frames/FRAME_x.png -> FRAME_x.png)
+                            // Extract filename only from texture path (e.g. Blocks/Frames/1x1/FRAME_x.png -> FRAME_x.png)
                             String fileNameOnly = escapedTex;
                             int slash = fileNameOnly.lastIndexOf('/');
                             if (slash >= 0 && slash + 1 < fileNameOnly.length()) fileNameOnly = fileNameOnly.substring(slash + 1);
@@ -130,7 +156,34 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
 
             player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Descargando imagen..."));
             try {
-                String stateKey = FileHelper.addImageStateFromUrl(url, 32, 32, data.name);
+                int sizeX = 32;
+                int sizeY = 32;
+                try {
+                    long chunkIndex = ChunkUtil.indexChunkFromBlock(this.targetBlock.x, this.targetBlock.z);
+                    WorldChunk chunk = this.targetWorld.getChunkIfInMemory(chunkIndex);
+                    if (chunk != null) {
+                        BlockType current = chunk.getBlockType(this.targetBlock.x, this.targetBlock.y, this.targetBlock.z);
+                        if (current != null) {
+                            String id = current.getId();
+                            if (id != null) {
+                                Matcher m = Pattern.compile("(\\d+)x(\\d+)").matcher(id);
+                                if (m.find()) {
+                                    int w = Integer.parseInt(m.group(1));
+                                    int h = Integer.parseInt(m.group(2));
+                                    sizeX = 32 * Math.max(1, w);
+                                    sizeY = 32 * Math.max(1, h);
+                                    Frames.LOGGER.atInfo().log("Determined frame size from block id '" + id + "': " + sizeX + "x" + sizeY);
+                                }
+                            }
+                        }
+                    } else {
+                        Frames.LOGGER.atInfo().log("Chunk not in memory for block; using default size 32x32");
+                    }
+                } catch (Exception e) {
+                    Frames.LOGGER.atWarning().withCause(e).log("Failed to determine block size, defaulting to 32x32");
+                }
+
+                String stateKey = FileHelper.addImageStateFromUrl(url, sizeX, sizeY, data.name);
 
                 // Delay applying the state by 10 seconds to allow any asset/IO sync.
                 new Thread(() -> {

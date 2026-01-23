@@ -22,12 +22,31 @@ import java.util.function.Consumer;
 
 public class FileHelper {
         public static final Path MODS_ROOT = Paths.get("mods", "BoffmediaFrames");
-        public static final Path FRAME_JSON = MODS_ROOT.resolve(Paths.get("Server", "Item", "Items", "Furniture", "Paintings", "Boff_Frame_1x1.json"));
-        public static final Path FRAME_TEXTURE = MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames", "FRAME_TEST.png"));
+
+        // Define available frame sizes (width x height in frames)
+        public static final String[] FRAME_SIZES = new String[]{"1x1", "2x2"};
+
+        private static Path frameJsonPathFor(String sizeKey) {
+            return MODS_ROOT.resolve(Paths.get("Server", "Item", "Items", "Furniture", "Frames", "Boff_Frame_" + sizeKey + ".json"));
+        }
+
+        private static Path textureDirFor(String sizeKey) {
+            return MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames", sizeKey));
+        }
+
+        private static Path texturePathFor(String sizeKey, String fileName) {
+            return textureDirFor(sizeKey).resolve(fileName);
+        }
 
         // Default JSON is stored in resources/DefaultFrame.json
 
-    private static String loadDefaultJsonFromResource() throws IOException {
+    private static String loadDefaultJsonFromResource(String sizeKey) throws IOException {
+        // Prefer size-specific default (e.g. DefaultFrame_1x1.json), fallback to DefaultFrame.json
+        String specific = "/DefaultFrame_" + sizeKey + ".json";
+        try (InputStream is = FileHelper.class.getResourceAsStream(specific)) {
+            if (is != null) return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
+
         try (InputStream is = FileHelper.class.getResourceAsStream("/DefaultFrame.json")) {
             if (is == null) throw new IOException("DefaultFrame.json resource not found on classpath");
             return new String(is.readAllBytes(), StandardCharsets.UTF_8);
@@ -37,35 +56,65 @@ public class FileHelper {
         Frames.LOGGER.atInfo().log("Mods folder exists: " + Files.exists(MODS_ROOT));
 
         try {
-            ensureDefaultJsonExists();
-            BsonDocument doc = readDocument();
-            Frames.LOGGER.atInfo().log("Document loaded: " + doc);
+            // Ensure defaults exist for all declared sizes
+            for (String sk : FRAME_SIZES) {
+                ensureDefaultJsonExists(sk);
+                BsonDocument doc = readDocument(sk);
+                Frames.LOGGER.atInfo().log("Document loaded for " + sk + ": " + (doc != null));
+            }
+            // Ensure top-level manifest exists in mods root (copy from resource manifest_generated.json)
+            ensureManifestExists();
         } catch (Exception e) {
             Frames.LOGGER.atSevere().withCause(e).log("Failed to ensure or load frame json: " + e.getMessage());
         }
     }
 
-    public static void ensureDefaultJsonExists() throws IOException {
-        if (!Files.exists(FRAME_JSON)) {
-            Files.createDirectories(FRAME_JSON.getParent());
-            Files.writeString(FRAME_JSON, loadDefaultJsonFromResource());
-            Frames.LOGGER.atInfo().log("Wrote default frame json to: " + FRAME_JSON);
+    /**
+     * Ensure that mods/BoffmediaFrames/manifest.json exists. If not, copy
+     * the embedded resource /manifest_generated.json into that location.
+     */
+    public static void ensureManifestExists() {
+        try {
+            Path manifestOut = MODS_ROOT.resolve("manifest.json");
+            if (Files.exists(manifestOut)) return;
+
+            try (InputStream is = FileHelper.class.getResourceAsStream("/manifest_generated.json")) {
+                if (is == null) {
+                    Frames.LOGGER.atWarning().log("Resource manifest_generated.json not found on classpath; skipping manifest copy");
+                    return;
+                }
+                Files.createDirectories(manifestOut.getParent());
+                Files.copy(is, manifestOut);
+                Frames.LOGGER.atInfo().log("Copied manifest_generated.json -> " + manifestOut);
+            }
+        } catch (Exception e) {
+            Frames.LOGGER.atWarning().withCause(e).log("Failed to ensure manifest.json: " + e.getMessage());
         }
     }
 
-    public static BsonDocument readDocument() {
-        return BsonUtil.readDocumentNow(FRAME_JSON);
+    public static void ensureDefaultJsonExists(String sizeKey) throws IOException {
+        Path pj = frameJsonPathFor(sizeKey);
+        if (!Files.exists(pj)) {
+            Files.createDirectories(pj.getParent());
+            Files.writeString(pj, loadDefaultJsonFromResource(sizeKey));
+            Frames.LOGGER.atInfo().log("Wrote default frame json to: " + pj);
+        }
     }
 
-    public static void writeDocument(BsonDocument doc) throws IOException {
-        Files.createDirectories(FRAME_JSON.getParent());
-        Files.writeString(FRAME_JSON, doc.toJson());
+    public static BsonDocument readDocument(String sizeKey) {
+        return BsonUtil.readDocumentNow(frameJsonPathFor(sizeKey));
     }
 
-    public static void updateDocument(Consumer<BsonDocument> updater) throws IOException {
-        BsonDocument doc = readDocument();
+    public static void writeDocument(BsonDocument doc, String sizeKey) throws IOException {
+        Path pj = frameJsonPathFor(sizeKey);
+        Files.createDirectories(pj.getParent());
+        Files.writeString(pj, doc.toJson());
+    }
+
+    public static void updateDocument(Consumer<BsonDocument> updater, String sizeKey) throws IOException {
+        BsonDocument doc = readDocument(sizeKey);
         updater.accept(doc);
-        writeDocument(doc);
+        writeDocument(doc, sizeKey);
     }
 
     private static final SecureRandom RNG = new SecureRandom();
@@ -106,8 +155,8 @@ public class FileHelper {
     }
 
     /* Helper: save PNG into mods folder and return the path */
-    public static Path saveImageToMods(BufferedImage img, String fileName) throws IOException {
-        Path out = MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames", fileName));
+    public static Path saveImageToMods(BufferedImage img, String fileName, String sizeKey) throws IOException {
+        Path out = texturePathFor(sizeKey, fileName);
         Files.createDirectories(out.getParent());
         boolean written = ImageIO.write(img, "png", out.toFile());
         if (!written) throw new IOException("ImageIO.write returned false for: " + out.toString());
@@ -115,9 +164,9 @@ public class FileHelper {
     }
 
     /* Helper: ensure default JSON exists and return the BsonDocument */
-    public static BsonDocument loadOrCreateDocument() throws IOException {
-        ensureDefaultJsonExists();
-        return readDocument();
+    public static BsonDocument loadOrCreateDocument(String sizeKey) throws IOException {
+        ensureDefaultJsonExists(sizeKey);
+        return readDocument(sizeKey);
     }
 
     /* Helper: add a state definition into the provided document (in-memory) */
@@ -141,11 +190,12 @@ public class FileHelper {
     }
 
     /* Helper: pretty-print JSON and save to mods FRAME_JSON */
-    public static void prettyPrintAndSave(BsonDocument doc) throws IOException {
+    public static void prettyPrintAndSave(BsonDocument doc, String sizeKey) throws IOException {
         JsonWriterSettings settings = JsonWriterSettings.builder().indent(true).build();
         String pretty = doc.toJson(settings);
-        Files.createDirectories(FRAME_JSON.getParent());
-        Files.writeString(FRAME_JSON, pretty);
+        Path pj = frameJsonPathFor(sizeKey);
+        Files.createDirectories(pj.getParent());
+        Files.writeString(pj, pretty);
     }
 
     /**
@@ -180,13 +230,18 @@ public class FileHelper {
             baseName = generateRandomName(8);
         }
 
-        // Save image file
+        // Determine sizeKey from pixel dimensions (32px per frame unit)
+        int w = Math.max(1, sizeX / 32);
+        int h = Math.max(1, sizeY / 32);
+        String sizeKey = w + "x" + h;
+
+        // Save image file inside size-specific subfolder
         String fileName = baseName + ".png";
-        Path out = saveImageToMods(scaled, fileName);
-        String texturePath = "Blocks/Frames/" + fileName;
+        Path out = saveImageToMods(scaled, fileName, sizeKey);
+        String texturePath = "Blocks/Frames/" + sizeKey + "/" + fileName;
 
         // Insert state into document, ensuring unique key
-        BsonDocument doc = loadOrCreateDocument();
+        BsonDocument doc = loadOrCreateDocument(sizeKey);
 
         BsonDocument blockType;
         if (!doc.containsKey("BlockType")) {
@@ -221,7 +276,7 @@ public class FileHelper {
         }
 
         addStateToDocument(doc, uniqueKey, texturePath);
-        prettyPrintAndSave(doc);
+        prettyPrintAndSave(doc, sizeKey);
 
         Frames.LOGGER.atInfo().log("Added state " + uniqueKey + " with texture " + texturePath + " saved to " + out.toString());
         return uniqueKey;

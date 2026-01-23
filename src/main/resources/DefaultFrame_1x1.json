@@ -1,13 +1,13 @@
 {
   "TranslationProperties": {
-    "Name": "boffmedia.frames.frame_1x1.name",
-    "Description": "boffmedia.frames.frame_1x1.description"
+    "Name": "frames.frame_1x1.name",
+    "Description": "frames.frame_1x1.description"
   },
   "Categories": [
     "Blocks.Deco"
   ],
   "BlockType": {
-    "InteractionHint": "boffmedia.frames.empty",
+    "InteractionHint": "frames.use_hint",
     "Material": "Solid",
     "DrawType": "Model",
     "Opacity": "Transparent",
@@ -40,7 +40,7 @@
     "State": {
       "Definitions": {
         "1": {
-          "InteractionHint": "boffmedia.frames.empty",
+          "InteractionHint": "frames.use_hint",
           "CustomModelTexture": [
             {
               "Texture": "Blocks/Frames/frame.png"
