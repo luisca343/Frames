@@ -1,0 +1,22 @@
+{
+    "Group": "Boffmedia",
+    "Name": "Frames_Generated",
+    "Version": "1.0.0",
+    "Description": "(Generated) Adds Picture Frames to the game, allowing players to display images from the Internet in their bases.",
+    "Authors": [
+        {
+            "Name": "Luisca"
+        }
+    ],
+    "Website": "booffmedia.es",
+    "ServerVersion": "*",
+    "Dependencies": {
+        
+    },
+    "OptionalDependencies": {
+        
+    },
+    "DisabledByDefault": false,
+    "Main": "es.boffmedia.frames.Frames",
+    "IncludesAssetPack": true
+}

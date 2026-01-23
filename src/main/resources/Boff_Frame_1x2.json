@@ -1,0 +1,111 @@
+{
+  "TranslationProperties": {
+    "Name": "frames.frame_1x2.name",
+    "Description": "frames.frame_1x2.description"
+  },
+  "Categories": [
+    "Blocks.Deco"
+  ],
+  "BlockType": {
+    "InteractionHint": "frames.use_hint",
+    "Material": "Solid",
+    "DrawType": "Model",
+    "Opacity": "Transparent",
+    "CustomModel": "Blocks/Frames/Frame_1x2.blockymodel",
+    "Flags": {
+      "IsUsable": true
+    },
+    "CustomModelTexture": [
+      {
+        "Texture": "Blocks/Frames/frame_1x2.png"
+      }
+    ],
+    "HitboxType": "Painting",
+    "VariantRotation": "NESW",
+    "Gathering": {
+      "Soft": {
+        "IsWeaponBreakable": false
+      }
+    },
+    "BlockParticleSetId": "Wood",
+    "BlockSoundSetId": "Wood",
+    "Support": {
+      "North": [
+        {
+          "FaceType": "Full"
+        }
+      ]
+    },
+    "ParticleColor": "#684127",
+    "State": {
+      "Definitions": {
+        "1": {
+          "InteractionHint": "frames.use_hint",
+          "CustomModelTexture": [
+            {
+              "Texture": "Blocks/Frames/frame_1x2.png"
+            }
+          ]
+        }
+      }
+    },
+    "CubeShadingMode": "Standard",
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "Frames_UseFrameInteraction"
+          }
+        ]
+      }
+    }
+  },
+  "PlayerAnimationsId": "Block",
+  "IconProperties": {
+    "Scale": 0.68,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      8.5,
+      -19.7
+    ]
+  },
+  "Recipe": {
+    "Input": [
+      {
+        "ItemId": "Ingredient_Stick",
+        "Quantity": 2
+      },
+      {
+        "ItemId": "Ingredient_Fabric_Scrap_Linen",
+        "Quantity": 1
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Type": "Crafting",
+        "Id": "Furniture_Bench",
+        "Categories": [
+          "Furniture_Misc"
+        ]
+      }
+    ]
+  },
+  "ResourceTypes": [
+    {
+      "Id": "Fuel"
+    },
+    {
+      "Id": "Charcoal"
+    }
+  ],
+  "Tags": {
+    "Type": [
+      "Furniture"
+    ]
+  },
+  "Icon": "Icons/ItemsGenerated/Boff_Frame_1x1.png"
+}

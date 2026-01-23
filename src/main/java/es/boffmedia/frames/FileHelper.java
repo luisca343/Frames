@@ -33,7 +33,7 @@ public class FileHelper {
         public static final Path MODS_ROOT = Paths.get("mods", "BoffmediaFrames");
 
         // Define available frame sizes (width x height in frames)
-        public static final String[] FRAME_SIZES = new String[]{"1x1", "2x2"};
+        public static final String[] FRAME_SIZES = new String[]{"1x1", "1x2", "1x3", "2x1", "2x2", "2x3", "3x1", "3x2", "3x3"};
 
         private static Path frameJsonPathFor(String sizeKey) {
             return MODS_ROOT.resolve(Paths.get("Server", "Item", "Items", "Furniture", "Frames", "Boff_Frame_" + sizeKey + ".json"));
@@ -47,11 +47,11 @@ public class FileHelper {
             return textureDirFor(sizeKey).resolve(fileName);
         }
 
-        // Default JSON is stored in resources/DefaultFrame.json
+        // Default JSON is stored in resources/Default Boff_Frame.json
 
     private static String loadDefaultJsonFromResource(String sizeKey) throws IOException {
-        // Prefer size-specific default (e.g. DefaultFrame_1x1.json), fallback to DefaultFrame.json
-        String specific = "/DefaultFrame_" + sizeKey + ".json";
+        // Prefer size-specific default (e.g. Boff_Frame_1x1.json), fallback to Default Boff_Frame.json
+        String specific = "/Boff_Frame_" + sizeKey + ".json";
         try (InputStream is = FileHelper.class.getResourceAsStream(specific)) {
             if (is != null) return new String(is.readAllBytes(), StandardCharsets.UTF_8);
         }
