@@ -46,14 +46,6 @@
               "Texture": "Blocks/Frames/frame_3x3.png"
             }
           ]
-        },
-        "Baity": {
-          "InteractionHint": "frames.use_hint",
-          "CustomModelTexture": [
-            {
-              "Texture": "Blocks/Frames/3x3/Baity.png"
-            }
-          ]
         }
       }
     },
