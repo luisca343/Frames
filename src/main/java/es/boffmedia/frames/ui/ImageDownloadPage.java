@@ -184,8 +184,11 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                 }
 
                 String stateKey = FileHelper.addImageStateFromUrl(url, sizeX, sizeY, data.name);
-
+                // Lo ideal sería poder aplicar justo después de que termine de actualizar, pero no veo la forma
+                // Así que por ahora cierro y que se actualice manualmente
+                this.close();
                 // Delay applying the state by 10 seconds to allow any asset/IO sync.
+                /*
                 new Thread(() -> {
                     try {
                         Thread.sleep(5_000);
@@ -200,7 +203,7 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                         Thread.currentThread().interrupt();
                         Frames.LOGGER.atWarning().withCause(ie).log("Delayed state application interrupted");
                     }
-                }).start();
+                }).start();*/
             } catch (IOException e) {
                 player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error al descargar o procesar la imagen: " + e.getMessage()));
             }

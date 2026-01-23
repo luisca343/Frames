@@ -46,6 +46,14 @@
               "Texture": "Blocks/Frames/frame_3x3.png"
             }
           ]
+        },
+        "Baity": {
+          "InteractionHint": "frames.use_hint",
+          "CustomModelTexture": [
+            {
+              "Texture": "Blocks/Frames/3x3/Baity.png"
+            }
+          ]
         }
       }
     },
@@ -107,5 +115,7 @@
       "Furniture"
     ]
   },
-  "Icon": "Icons/ItemsGenerated/Boff_Frame_1x1.png"
+  "Icon": "Icons/ItemsGenerated/Boff_Frame_1x1.png",
+  "UsePlayerAnimations": false,
+  "Scale": 0.5
 }

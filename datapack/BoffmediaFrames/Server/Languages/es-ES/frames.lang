@@ -1,0 +1,28 @@
+use_hint = Pulsa [{key}] para usar
+
+frame_1x1.name = Marco en línea 1x1
+frame_1x1.description = Marco en línea 1x1 que descarga una imagen de Internet y la muestra en un marco 1x1.
+
+frame_2x2.name = Marco en línea 2x2
+frame_2x2.description = Marco en línea 2x2 que descarga una imagen de Internet y la muestra en un marco 2x2.
+
+frame_1x2.name = Marco en línea 1x2
+frame_1x2.description = Marco en línea 1x2 que descarga una imagen de Internet y la muestra en un marco 1x2.
+
+frame_1x3.name = Marco en línea 1x3
+frame_1x3.description = Marco en línea 1x3 que descarga una imagen de Internet y la muestra en un marco 1x3.
+
+frame_2x1.name = Marco en línea 2x1
+frame_2x1.description = Marco en línea 2x1 que descarga una imagen de Internet y la muestra en un marco 2x1.
+
+frame_2x3.name = Marco en línea 2x3
+frame_2x3.description = Marco en línea 2x3 que descarga una imagen de Internet y la muestra en un marco 2x3.
+
+frame_3x1.name = Marco en línea 3x1
+frame_3x1.description = Marco en línea 3x1 que descarga una imagen de Internet y la muestra en un marco 3x1.
+
+frame_3x2.name = Marco en línea 3x2
+frame_3x2.description = Marco en línea 3x2 que descarga una imagen de Internet y la muestra en un marco 3x2.
+
+frame_3x3.name = Marco en línea 3x3
+frame_3x3.description = Marco en línea 3x3 que descarga una imagen de Internet y la muestra en un marco 3x3.
