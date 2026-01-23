@@ -1,0 +1,28 @@
+$C = "../Common.ui";
+
+Group {
+    Anchor: (Width: 400, Height: 160);
+    Background: #1a1a2e(0.96);
+    LayoutMode: Top;
+    Padding: (Full: 16);
+
+    Label #Title {
+        Text: "Download Image";
+        Anchor: (Height: 36);
+        Style: (FontSize: 20, TextColor: #ffffff, HorizontalAlignment: Center, RenderBold: true);
+    }
+
+    Group { Anchor: (Height: 8); }
+
+    $C.@TextField #UrlInput {
+        Anchor: (Height: 36);
+    }
+
+    Group { Anchor: (Height: 8); }
+
+    TextButton #UploadButton {
+        Text: "Upload";
+        Anchor: (Height: 36);
+        Style: $C.@DefaultTextButtonStyle;
+    }
+}
