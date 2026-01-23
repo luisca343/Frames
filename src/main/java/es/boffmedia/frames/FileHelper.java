@@ -247,7 +247,7 @@ public class FileHelper {
     /* Helper: add a state definition into the provided document (in-memory) */
     public static void addStateToDocument(BsonDocument doc, String key, String texturePath) {
         BsonDocument stateDef = new BsonDocument();
-        stateDef.append("InteractionHint", new BsonString("boffmedia.frames.empty"));
+        stateDef.append("InteractionHint", new BsonString("frames.use_hint"));
         BsonArray texArr = new BsonArray();
         texArr.add(new BsonDocument().append("Texture", new BsonString(texturePath)));
         stateDef.append("CustomModelTexture", texArr);
