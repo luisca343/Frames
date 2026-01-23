@@ -68,6 +68,12 @@ Group {
         Anchor: (Width: 0, Height: 0);
         Visible: false;
     }
+    /* Hidden sentinel DeleteButton so event bindings for Delete resolve at load time */
+    TextButton #DeleteButton {
+        Text: "";
+        Anchor: (Width: 0, Height: 0);
+        Visible: false;
+    }
 
     Group #StatesList {
         FlexWeight: 1;
