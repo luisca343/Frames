@@ -20,7 +20,7 @@
         "Texture": "Blocks/Frames/frame_1x2.png"
       }
     ],
-    "HitboxType": "Painting",
+    "HitboxType": "Painting_1x2",
     "VariantRotation": "NESW",
     "Gathering": {
       "Soft": {

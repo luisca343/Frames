@@ -20,7 +20,7 @@
         "Texture": "Blocks/Frames/frame_1x3.png"
       }
     ],
-    "HitboxType": "Painting",
+    "HitboxType": "Boff_Frame_1x3",
     "VariantRotation": "NESW",
     "Gathering": {
       "Soft": {
@@ -62,7 +62,7 @@
   },
   "PlayerAnimationsId": "Block",
   "IconProperties": {
-    "Scale": 0.4,
+    "Scale": 0.68,
     "Rotation": [
       22.5,
       45,
@@ -70,7 +70,7 @@
     ],
     "Translation": [
       8.5,
-      -43
+      -19.7
     ]
   },
   "Recipe": {
@@ -107,5 +107,5 @@
       "Furniture"
     ]
   },
-  "Icon": "Icons/ItemsGenerated/Boff_Frame_1x3.png"
+  "Icon": "Icons/ItemsGenerated/Boff_Frame_1x1.png"
 }
