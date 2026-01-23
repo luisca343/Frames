@@ -129,9 +129,12 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                             // Set filename label on the appended instance
                             uiCommandBuilder.set(instancePrefix + " #FileNameLabel.Text", fileNameOnly);
 
-                            // Bind the Apply button for this specific instance
-                            uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, instancePrefix + " #ApplyButton",
+                                // Bind the Apply button for this specific instance
+                                uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, instancePrefix + " #ApplyButton",
                                     new EventData().append("Action", "Apply").append("StateKey", key), false);
+                                // Bind the Delete button for this specific instance
+                                uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, instancePrefix + " #DeleteButton",
+                                    new EventData().append("Action", "Delete").append("StateKey", key), false);
                         }
                     }
                 }
@@ -206,6 +209,37 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                 }).start();*/
             } catch (IOException e) {
                 player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error al descargar o procesar la imagen: " + e.getMessage()));
+            }
+        }
+        else if ("Delete".equals(data.action)) {
+            String stateKey = data.stateKey;
+            if (stateKey == null || stateKey.isEmpty()) return;
+
+            // Determine sizeKey for the target block (fall back to "1x1")
+            String sizeKey = "1x1";
+            try {
+                long chunkIndex = ChunkUtil.indexChunkFromBlock(this.targetBlock.x, this.targetBlock.z);
+                WorldChunk chunk = this.targetWorld.getChunkIfInMemory(chunkIndex);
+                if (chunk != null) {
+                    BlockType current = chunk.getBlockType(this.targetBlock.x, this.targetBlock.y, this.targetBlock.z);
+                    if (current != null) {
+                        String id = current.getId();
+                        if (id != null) {
+                            Matcher m = Pattern.compile("(\\d+)x(\\d+)").matcher(id);
+                            if (m.find()) {
+                                sizeKey = m.group(1) + "x" + m.group(2);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            try {
+                boolean removed = FileHelper.removeImageState(sizeKey, stateKey);
+                if (removed) player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Imagen eliminada y estado removido: " + stateKey));
+                else player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No se encontró el estado o no se pudo eliminar: " + stateKey));
+            } catch (IOException e) {
+                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error al eliminar la imagen: " + e.getMessage()));
             }
         }
         else if ("Apply".equals(data.action)) {

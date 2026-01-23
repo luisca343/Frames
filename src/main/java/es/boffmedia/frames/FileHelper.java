@@ -361,4 +361,54 @@ public class FileHelper {
     public static String addImageStateFromUrl(String urlStr) throws IOException {
         return addImageStateFromUrl(urlStr, 32, 32, null);
     }
+
+    /**
+     * Remove an image state from the frame JSON and delete the texture file on disk if present.
+     * @param sizeKey size key like "1x1", "2x3"
+     * @param stateKey the state key to remove
+     * @return true if the state existed and was removed (file deletion may still fail silently)
+     */
+    public static boolean removeImageState(String sizeKey, String stateKey) throws IOException {
+        BsonDocument doc = loadOrCreateDocument(sizeKey);
+        if (doc == null) return false;
+
+        if (!doc.containsKey("BlockType")) return false;
+        BsonDocument blockType = doc.getDocument("BlockType");
+        if (!blockType.containsKey("State")) return false;
+        BsonDocument state = blockType.getDocument("State");
+        if (!state.containsKey("Definitions")) return false;
+        BsonDocument defs = state.getDocument("Definitions");
+        if (!defs.containsKey(stateKey)) return false;
+
+        // Try to locate texture path from the definition (first CustomModelTexture entry)
+        String texturePath = null;
+        try {
+            BsonDocument def = defs.getDocument(stateKey);
+            if (def.containsKey("CustomModelTexture")) {
+                BsonArray arr = def.getArray("CustomModelTexture");
+                if (arr.size() > 0) {
+                    BsonDocument tdoc = arr.get(0).asDocument();
+                    if (tdoc.containsKey("Texture")) texturePath = tdoc.getString("Texture").getValue();
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // Remove definition and save JSON
+        defs.remove(stateKey);
+        prettyPrintAndSave(doc, sizeKey);
+
+        // Delete texture file if it was under Blocks/Frames/<sizeKey>/...
+        if (texturePath != null && texturePath.startsWith("Blocks/Frames/")) {
+            String after = texturePath.substring("Blocks/Frames/".length());
+            Path p = MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames").resolve(after));
+            try {
+                Files.deleteIfExists(p);
+                Frames.LOGGER.atInfo().log("Deleted texture file: " + p);
+            } catch (IOException e) {
+                Frames.LOGGER.atWarning().withCause(e).log("Failed to delete texture file: " + p + " -> " + e.getMessage());
+            }
+        }
+
+        return true;
+    }
 }
