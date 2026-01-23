@@ -1,4 +1,4 @@
-package es.boffmedia.frames;
+package es.boffmedia.frames.interactions;
 
 
 import com.hypixel.hytale.codec.builder.BuilderCodec;
@@ -6,32 +6,22 @@ import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.BlockPosition;
 import com.hypixel.hytale.protocol.InteractionType;
-import com.hypixel.hytale.protocol.ModelTexture;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import com.hypixel.hytale.server.core.asset.type.gameplay.GameplayConfig;
-import com.hypixel.hytale.server.core.asset.type.gameplay.WorldConfig;
-import com.hypixel.hytale.server.core.asset.type.item.config.BlockGroup;
-import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.server.OpenCustomUIInteraction;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
-import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
-import com.hypixel.hytale.server.core.universe.world.meta.BlockState;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import es.boffmedia.frames.Frames;
+import es.boffmedia.frames.ui.ImageDownloadPage;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.function.Supplier;
 
 public class UseFrameInteraction extends OpenCustomUIInteraction {
@@ -49,10 +39,6 @@ public class UseFrameInteraction extends OpenCustomUIInteraction {
         World world = player.getWorld();
         BlockPosition targetBlock = context.getTargetBlock();
 
-        ChunkStore chunkStore = world.getChunkStore();
-        Store<ChunkStore> chunkStoreStore = chunkStore.getStore();
-        long chunkIndex = ChunkUtil.indexChunkFromBlock(targetBlock.x, targetBlock.z);
-        Ref<ChunkStore> chunkReference = chunkStore.getChunkReference(chunkIndex);
 
         ImageDownloadPage page = new ImageDownloadPage(playerRef, world, targetBlock);
         player.getPageManager().openCustomPage(player.getReference(), player.getReference().getStore(), page);

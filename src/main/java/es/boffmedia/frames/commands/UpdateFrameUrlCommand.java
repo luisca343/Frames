@@ -1,4 +1,4 @@
-package es.boffmedia.frames;
+package es.boffmedia.frames.commands;
 
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
@@ -13,6 +13,7 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.Ref;
+import es.boffmedia.frames.FileHelper;
 
 import javax.annotation.Nonnull;
 
@@ -36,7 +37,7 @@ public class UpdateFrameUrlCommand extends AbstractPlayerCommand {
 
         sender.sendMessage(Message.raw("Descargando imagen..."));
         try {
-            String stateKey = FileHelper.addImageStateFromUrl(url);
+            String stateKey = FileHelper.addImageStateFromUrl(url, 32, 32);
             sender.sendMessage(Message.raw("Imagen procesada y añadida como estado: " + stateKey));
         } catch (IOException e) {
             sender.sendMessage(Message.raw("Error al descargar o procesar la imagen: " + e.getMessage()));

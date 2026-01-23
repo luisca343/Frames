@@ -28,8 +28,8 @@ public class FileHelper {
         // Default JSON is stored in resources/DefaultFrame.json
 
     private static String loadDefaultJsonFromResource() throws IOException {
-        try (InputStream is = FileHelper.class.getResourceAsStream("DefaultFrame.json")) {
-            if (is == null) throw new IOException("Boff_Frame_1x1.json resource not found on classpath");
+        try (InputStream is = FileHelper.class.getResourceAsStream("/DefaultFrame.json")) {
+            if (is == null) throw new IOException("DefaultFrame.json resource not found on classpath");
             return new String(is.readAllBytes(), StandardCharsets.UTF_8);
         }
     }
@@ -70,10 +70,15 @@ public class FileHelper {
 
     private static final SecureRandom RNG = new SecureRandom();
     private static final String NAME_ALPHANUM = "abcdefghijklmnopqrstuvwxyz0123456789";
+    // Need first to be a uppercase letter to comply witth Hytale's asset naming rules
+    private static final String NAME_FIRST_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     private static String generateRandomName(int length) {
+        if (length <= 0) return "";
         StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++) {
+        // First character must be an uppercase letter
+        sb.append(NAME_FIRST_LETTERS.charAt(RNG.nextInt(NAME_FIRST_LETTERS.length())));
+        for (int i = 1; i < length; i++) {
             sb.append(NAME_ALPHANUM.charAt(RNG.nextInt(NAME_ALPHANUM.length())));
         }
         return sb.toString();
@@ -89,13 +94,13 @@ public class FileHelper {
     }
 
     /* Helper: resize a BufferedImage to a square of given size (nearest-neighbor) */
-    public static BufferedImage resizeImage(BufferedImage src, int targetSize) {
-        BufferedImage scaled = new BufferedImage(targetSize, targetSize, BufferedImage.TYPE_INT_ARGB);
+    public static BufferedImage resizeImage(BufferedImage src, int targetSizeX, int targetSizeY) {
+        BufferedImage scaled = new BufferedImage(targetSizeX, targetSizeY, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = scaled.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
         g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
-        g.drawImage(src, 0, 0, targetSize, targetSize, null);
+        g.drawImage(src, 0, 0, targetSizeX, targetSizeY, null);
         g.dispose();
         return scaled;
     }
@@ -149,25 +154,81 @@ public class FileHelper {
      * State.Definitions entry into the frame JSON using the same random key.
      * Returns the generated state key.
      */
-    public static String addImageStateFromUrl(String urlStr) throws IOException {
+    public static String addImageStateFromUrl(String urlStr, int sizeX, int sizeY) throws IOException {
+        return addImageStateFromUrl(urlStr, sizeX, sizeY, null);
+    }
+
+    public static String addImageStateFromUrl(String urlStr, int sizeX, int sizeY, String providedName) throws IOException {
         // Download
         BufferedImage image = downloadImage(urlStr);
 
         // Resize
-        BufferedImage scaled = resizeImage(image, 32);
+        BufferedImage scaled = resizeImage(image, sizeX, sizeY);
 
-        // Generate name and save image
-        String name = generateRandomName(8);
-        String fileName = "FRAME_" + name + ".png";
+        // Determine base name: use provided name (normalized) or fall back to random
+        String baseName = null;
+        if (providedName != null) {
+            String n = providedName.trim();
+            if (!n.isEmpty()) {
+                n = n.replaceAll("\\s+", "_");
+                if (n.length() == 1) n = n.toUpperCase();
+                else n = n.substring(0, 1).toUpperCase() + n.substring(1).toLowerCase();
+                baseName = n;
+            }
+        }
+        if (baseName == null || baseName.isEmpty()) {
+            baseName = generateRandomName(8);
+        }
+
+        // Save image file
+        String fileName = baseName + ".png";
         Path out = saveImageToMods(scaled, fileName);
         String texturePath = "Blocks/Frames/" + fileName;
 
-        // Load or create doc, add state, pretty-save
+        // Insert state into document, ensuring unique key
         BsonDocument doc = loadOrCreateDocument();
-        addStateToDocument(doc, name, texturePath);
+
+        BsonDocument blockType;
+        if (!doc.containsKey("BlockType")) {
+            blockType = new BsonDocument();
+            doc.append("BlockType", blockType);
+        } else {
+            blockType = doc.getDocument("BlockType");
+        }
+
+        BsonDocument state;
+        if (!blockType.containsKey("State")) {
+            state = new BsonDocument();
+            blockType.append("State", state);
+        } else {
+            state = blockType.getDocument("State");
+        }
+
+        BsonDocument defs;
+        if (!state.containsKey("Definitions")) {
+            defs = new BsonDocument();
+            state.append("Definitions", defs);
+        } else {
+            defs = state.getDocument("Definitions");
+        }
+
+        String uniqueKey = baseName;
+        int attempt = 0;
+        while (defs.containsKey(uniqueKey)) {
+            attempt++;
+            uniqueKey = baseName + "_" + generateRandomName(4);
+            if (attempt > 8) break;
+        }
+
+        addStateToDocument(doc, uniqueKey, texturePath);
         prettyPrintAndSave(doc);
 
-        Frames.LOGGER.atInfo().log("Added state " + name + " with texture " + texturePath + " saved to " + out.toString());
-        return name;
+        Frames.LOGGER.atInfo().log("Added state " + uniqueKey + " with texture " + texturePath + " saved to " + out.toString());
+        return uniqueKey;
+    }
+
+    // Compatibility overload used by older callers
+    public static String addImageStateFromUrl(String urlStr) throws IOException {
+        return addImageStateFromUrl(urlStr, 32, 32, null);
     }
 }

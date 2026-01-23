@@ -11,13 +11,13 @@
     "Material": "Solid",
     "DrawType": "Model",
     "Opacity": "Transparent",
-    "CustomModel": "Blocks/Frames/Frame.blockymodel",
+    "CustomModel": "Blocks/Frames/Frame1x1.blockymodel",
     "Flags": {
       "IsUsable": true
     },
     "CustomModelTexture": [
       {
-        "Texture": "Blocks/Frames/FRAME_TEST.png"
+        "Texture": "Blocks/Frames/frame.png"
       }
     ],
     "HitboxType": "Painting",
@@ -43,13 +43,22 @@
           "InteractionHint": "boffmedia.frames.empty",
           "CustomModelTexture": [
             {
-              "Texture": "Blocks/Frames/FRAME_TEST.png"
+              "Texture": "Blocks/Frames/frame.png"
             }
           ]
         }
       }
     },
-    "CubeShadingMode": "Standard"
+    "CubeShadingMode": "Standard",
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "Frames_UseFrameInteraction"
+          }
+        ]
+      }
+    }
   },
   "PlayerAnimationsId": "Block",
   "IconProperties": {

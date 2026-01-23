@@ -1,7 +1,7 @@
 $C = "../Common.ui";
 
 Group {
-    Anchor: (Width: 400, Height: 160);
+    Anchor: (Width: 650, Height: 450);
     Background: #1a1a2e(0.96);
     LayoutMode: Top;
     Padding: (Full: 16);
@@ -14,8 +14,44 @@ Group {
 
     Group { Anchor: (Height: 8); }
 
-    $C.@TextField #UrlInput {
-        Anchor: (Height: 36);
+    Group {
+        LayoutMode: Left;
+        Anchor: (Height: 44);
+
+        Label {
+            Text: "Name:";
+            Anchor: (Width: 80);
+            Style: (FontSize: 15, TextColor: #96a9be, VerticalAlignment: Center, RenderBold: true);
+        }
+
+        $C.@TextField #NameInput {
+            FlexWeight: 1;
+            Anchor: (Height: 40);
+            Padding: (Horizontal: 12);
+            Background: #0f1621;
+            PlaceholderText: "Enter image name...";
+        }
+    }
+
+    Group { Anchor: (Height: 8); }
+
+    Group {
+        LayoutMode: Left;
+        Anchor: (Height: 44);
+
+        Label {
+            Text: "URL:";
+            Anchor: (Width: 80);
+            Style: (FontSize: 15, TextColor: #96a9be, VerticalAlignment: Center, RenderBold: true);
+        }
+
+        $C.@TextField #UrlInput {
+            FlexWeight: 1;
+            Anchor: (Height: 40);
+            Padding: (Horizontal: 12);
+            Background: #0f1621;
+            PlaceholderText: "https://example.com/image.png";
+        }
     }
 
     Group { Anchor: (Height: 8); }
@@ -24,5 +60,20 @@ Group {
         Text: "Upload";
         Anchor: (Height: 36);
         Style: $C.@DefaultTextButtonStyle;
+    }
+
+    /* Hidden sentinel ApplyButton so event bindings resolve at load time */
+    TextButton #ApplyButton {
+        Text: "";
+        Anchor: (Width: 0, Height: 0);
+        Visible: false;
+    }
+
+    Group #StatesList {
+        FlexWeight: 1;
+        LayoutMode: TopScrolling;
+        Background: #0f1621(0.7);
+        Padding: (Full: 8);
+        ScrollbarStyle: $C.@DefaultScrollbarStyle;
     }
 }

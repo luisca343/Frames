@@ -4,6 +4,8 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import es.boffmedia.frames.commands.DownloadCommand;
+import es.boffmedia.frames.interactions.UseFrameInteraction;
 
 import javax.annotation.Nonnull;
 
