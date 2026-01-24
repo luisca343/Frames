@@ -37,16 +37,6 @@ This project enables downloading images from arbitrary URLs, converting them int
 - The in-world interaction code validates that the chunk is loaded and then sets the block's type/state and rotation accordingly.
 - If chunk saving or block update fails, the plugin logs an error and returns a user-friendly message in the UI.
 
-## Commands and UI usage
-
-- CLI example (registered command):
-
-```
-/updateframe url https://example.com/image.png
-```
-
-- GUI: interact with a frame block to open the image-import page where you can paste a URL, see existing imported states, apply or delete them.
-
 ## Naming conventions & sizing
 
 - Texture filenames are generated to be unique and conform to asset naming expectations.
