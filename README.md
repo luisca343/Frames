@@ -28,11 +28,16 @@ It is important to configure the project before using it as a template. Doing
 this before importing the project will help avoid running into caching issues
 later on.
 
+<<<<<<< Updated upstream
 ### 1: Project Name
 Set the name of the project in `settings.gradle`. This should be the name of
 your plugin. We recommend capitalizing your project name and avoiding 
 whitespace and most special characters. This will be used as the base name for
 any files produced by Gradle, like the sharable JAR file.
+=======
+- The plugin programmatically constructs a Hytale datapack (asset folder + manifest) during the image-import flow. This datapack contains the new texture files and updated asset JSON files (`State.Definitions`) for the correct frame sizes, and is written into the `mods/BoffmediaFrames/` (or the server's mod datapack location) so the game can reload and make the new states available without manual editing. 
+- This is both the reason the mod works, and the reason for the players to be required to reboot the server after installing the mod, as the first load creates the initial datapack structure, and unfortunately Hytale does not pick it up until a restart. (Workaround ideas welcome!)
+>>>>>>> Stashed changes
 
 ### 2: Gradle Properties
 Review the properties defined in `gradle.properties`. You should change the 
