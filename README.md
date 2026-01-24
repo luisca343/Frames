@@ -1,6 +1,8 @@
 
 # Boffmedia Frames — Adding Internet Images to Hytale
 
+![Boffmedia Frames image](https://i.imgur.com/kNV4943.png)
+
 ## Overview
 
 This project enables downloading images from arbitrary URLs, converting them into Hytale-compatible textures, injecting them as new block states in the frame asset JSON, and applying those states to in-world frame blocks via UI or commands.
