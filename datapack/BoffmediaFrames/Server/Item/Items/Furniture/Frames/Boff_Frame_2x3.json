@@ -107,5 +107,6 @@
       "Furniture"
     ]
   },
-  "Icon": "Icons/ItemsGenerated/Boff_Frame_1x1.png"
+  "Icon": "Icons/ItemsGenerated/Boff_Frame_1x1.png",
+  "Scale": 0.5
 }
