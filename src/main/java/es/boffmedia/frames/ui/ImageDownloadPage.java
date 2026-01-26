@@ -51,7 +51,7 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                 .add()
                 .append(new KeyedCodec<>("@SizeXInput", Codec.STRING), (ImageDownloadData o, String v) -> o.sizeXBlocks = v, (ImageDownloadData o) -> o.sizeXBlocks)
                 .add()
-                .append(new KeyedCodec<>("StateKey", Codec.STRING), (ImageDownloadData o, String v) -> o.stateKey = v, (ImageDownloadData o) -> o.stateKey)
+                .append(new KeyedCodec<>("@StateKey", Codec.STRING), (ImageDownloadData o, String v) -> o.stateKey = v, (ImageDownloadData o) -> o.stateKey)
                 .add())
                 .build();
     }
@@ -78,6 +78,13 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                 .append("@UrlInput", "#UrlInput.Value")
                 .append("@NameInput", "#NameInput.Value")
                 .append("@SizeXInput", "#SizeXInput.Value"),
+                false);
+
+        // Bind the Apply button: send the selected StateKey (or item id) without downloading
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#ApplyButton",
+            new EventData()
+                .append("Action", "Apply")
+                .append("@StateKey", "#StateKeyInput.Value"),
                 false);
 
         // Prefill inputs from metadata if a frame metadata file exists for this block coords
@@ -108,6 +115,16 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                                 try { uiCommandBuilder.set("#NameInput.Value", mname); } catch (Exception ignore) {}
                                 try { uiCommandBuilder.set("#UrlInput.Value", murl); } catch (Exception ignore) {}
                                 try { uiCommandBuilder.set("#SizeXInput.Value", Integer.toString(mbx)); } catch (Exception ignore) {}
+                                try {
+                                    String mid = "";
+                                    if (meta.containsKey("itemId")) {
+                                        try { mid = meta.getString("itemId").getValue(); } catch (Exception ignoreId) { mid = ""; }
+                                    }
+                                    if (mid == null || mid.isEmpty()) {
+                                        try { mid = p.getFileName().toString().replaceFirst("\\.json$", ""); } catch (Exception ignoreName) { mid = ""; }
+                                    }
+                                    if (mid != null && !mid.isEmpty()) uiCommandBuilder.set("#StateKeyInput.Value", mid);
+                                } catch (Exception ignore) {}
                                 break;
                             }
                         } catch (Exception ignoredMeta) {
@@ -255,9 +272,23 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
         else if ("Apply".equals(data.action)) {
             String stateKey = data.stateKey;
             if (stateKey == null || stateKey.isEmpty()) return;
-            boolean applied = UseFrameInteraction.applyStateToBlock(this.targetWorld, this.targetBlock, stateKey);
-            /*if (applied) player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Marco actualizado al estado: " + stateKey));
-            else player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No se pudo aplicar el estado: " + stateKey));*/
+
+            // If the provided key is an item id we generated (Boff_Frame_<name>),
+            // replace the block with that item type instead of trying to apply
+            // it as a state on the base Boff_Frame_1x1 block.
+            try {
+                if (stateKey.startsWith("Boff_Frame_") || stateKey.startsWith("Boff_Frame")) {
+                    boolean replaced = UseFrameInteraction.replaceBlockWithItem(this.targetWorld, this.targetBlock, stateKey);
+                    if (replaced) player.sendMessage(com.hypixel.hytale.server.core.Message.raw("El marco se ha actualizado al item: " + stateKey));
+                    else player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No se pudo reemplazar el bloque con el item: " + stateKey));
+                } else {
+                    boolean applied = UseFrameInteraction.applyStateToBlock(this.targetWorld, this.targetBlock, stateKey);
+                    if (applied) player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Marco actualizado al estado: " + stateKey));
+                    else player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No se pudo aplicar el estado: " + stateKey));
+                }
+            } catch (Exception e) {
+                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error al aplicar: " + e.getMessage()));
+            }
         }
     }
 }

@@ -7,7 +7,7 @@ Group {
     Padding: (Full: 16);
 
     Label #Title {
-        Text: "Download Image";
+        Text: "Picture Frame";
         Anchor: (Height: 36);
         Style: (FontSize: 20, TextColor: #ffffff, HorizontalAlignment: Center, RenderBold: true);
     }
@@ -56,14 +56,64 @@ Group {
 
     Group { Anchor: (Height: 8); }
 
+    Group {
+        LayoutMode: Left;
+        Anchor: (Height: 44);
+
+        Label {
+            Text: "Size X (blocks):";
+            Anchor: (Width: 140);
+            Style: (FontSize: 15, TextColor: #96a9be, VerticalAlignment: Center, RenderBold: true);
+        }
+
+        $C.@TextField #SizeXInput {
+            FlexWeight: 1;
+            Anchor: (Height: 40);
+            Padding: (Horizontal: 12);
+            Background: #0f1621;
+            PlaceholderText: "1";
+        }
+
+        /* Size Y removed — aspect ratio preserved automatically */
+    }
+
+    Group { Anchor: (Height: 8); }
+
+    Group {
+        LayoutMode: Left;
+        Anchor: (Height: 44);
+
+        Label {
+            Text: "Item / State Key:";
+            Anchor: (Width: 140);
+            Style: (FontSize: 15, TextColor: #96a9be, VerticalAlignment: Center, RenderBold: true);
+        }
+
+        $C.@TextField #StateKeyInput {
+            FlexWeight: 1;
+            Anchor: (Height: 40);
+            Padding: (Horizontal: 12);
+            Background: #0f1621;
+            PlaceholderText: "Paste item id or state key...";
+        }
+
+        TextButton #ApplyButton {
+            Text: "Apply";
+            Anchor: (Width: 120, Height: 36);
+            Style: $C.@DefaultTextButtonStyle;
+        }
+    }
+
+    Group { Anchor: (Height: 8); }
+
     TextButton #UploadButton {
         Text: "Upload";
         Anchor: (Height: 36);
         Style: $C.@DefaultTextButtonStyle;
     }
 
-    /* Hidden sentinel ApplyButton so event bindings resolve at load time */
-    TextButton #ApplyButton {
+    /* Hidden sentinel DeleteButton so event bindings for Delete resolve at load time */
+    TextButton #DeleteButton {
         Text: "";
         Anchor: (Width: 0, Height: 0);
         Visible: false;
