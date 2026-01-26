@@ -35,6 +35,8 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
         public String action;
         public String url;
         public String name;
+        public String sizeXBlocks;
+        public String sizeYBlocks;
         public String stateKey;
 
         public static final BuilderCodec<ImageDownloadData> CODEC = ((BuilderCodec.Builder<ImageDownloadData>) ((BuilderCodec.Builder<ImageDownloadData>)
@@ -44,6 +46,10 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                 .append(new KeyedCodec<>("@UrlInput", Codec.STRING), (ImageDownloadData o, String v) -> o.url = v, (ImageDownloadData o) -> o.url)
                 .add()
                 .append(new KeyedCodec<>("@NameInput", Codec.STRING), (ImageDownloadData o, String v) -> o.name = v, (ImageDownloadData o) -> o.name)
+                .add()
+                .append(new KeyedCodec<>("@SizeXInput", Codec.STRING), (ImageDownloadData o, String v) -> o.sizeXBlocks = v, (ImageDownloadData o) -> o.sizeXBlocks)
+                .add()
+                .append(new KeyedCodec<>("@SizeYInput", Codec.STRING), (ImageDownloadData o, String v) -> o.sizeYBlocks = v, (ImageDownloadData o) -> o.sizeYBlocks)
                 .add()
                 .append(new KeyedCodec<>("StateKey", Codec.STRING), (ImageDownloadData o, String v) -> o.stateKey = v, (ImageDownloadData o) -> o.stateKey)
                 .add())
@@ -67,7 +73,12 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
 
         // Bind the Upload button; send the Url input's value using the documented @<ControlId> mapping
         uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#UploadButton",
-            new EventData().append("Action", "Upload").append("@UrlInput", "#UrlInput.Value").append("@NameInput", "#NameInput.Value"),
+            new EventData()
+                .append("Action", "Upload")
+                .append("@UrlInput", "#UrlInput.Value")
+                .append("@NameInput", "#NameInput.Value")
+                .append("@SizeXInput", "#SizeXInput.Value")
+                .append("@SizeYInput", "#SizeYInput.Value"),
                 false);
 
         // Populate existing image states into the UI list (if present in JSON)
@@ -200,7 +211,17 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                 // Download image (no scaling) and create a dedicated item + blockymodel for it
                 try {
                     java.awt.image.BufferedImage img = FileHelper.downloadImage(url);
-                    String itemId = FileHelper.addImageAsItemFromImage(img, data.name);
+
+                    int blocksX = 1;
+                    int blocksY = 1;
+                    try {
+                        if (data.sizeXBlocks != null && !data.sizeXBlocks.trim().isEmpty()) blocksX = Math.max(1, Integer.parseInt(data.sizeXBlocks.trim()));
+                    } catch (Exception ignored) {}
+                    try {
+                        if (data.sizeYBlocks != null && !data.sizeYBlocks.trim().isEmpty()) blocksY = Math.max(1, Integer.parseInt(data.sizeYBlocks.trim()));
+                    } catch (Exception ignored) {}
+
+                    String itemId = FileHelper.addImageAsItemFromImage(img, data.name, blocksX, blocksY);
 
                     // Close UI and delay applying the new block so assets have time to sync
                     this.close();

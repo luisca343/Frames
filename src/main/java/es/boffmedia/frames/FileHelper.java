@@ -419,12 +419,13 @@ public class FileHelper {
         // Create a simple blockymodel matching exact pixel size
         Path modelOut = MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames", baseName + ".blockymodel"));
         Files.createDirectories(modelOut.getParent());
+        float zOffsetUrl = ((float) sizeX) / -8f;
         String modelJson = "{\n" +
-                "  \"nodes\": [\n" +
-                "    {\n" +
-                "      \"id\": \"1\",\n" +
-                "      \"name\": \"cube\",\n" +
-                "      \"position\": {\"x\": 0, \"y\": 16, \"z\": -15},\n" +
+            "  \"nodes\": [\n" +
+            "    {\n" +
+            "      \"id\": \"1\",\n" +
+            "      \"name\": \"cube\",\n" +
+            "      \"position\": {\"x\": 0, \"y\": 16, \"z\": -113},\n" +
                 "      \"orientation\": {\"x\": 0, \"y\": 0, \"z\": 0, \"w\": 1},\n" +
                 "      \"shape\": {\n" +
                 "        \"type\": \"box\",\n" +
@@ -454,6 +455,10 @@ public class FileHelper {
                 "}\n";
         Files.writeString(modelOut, modelJson);
 
+        // Compute render scale so the model (which is sized to the model pixels) is displayed
+        // at the requested block dimensions. Use horizontal size to compute scale.
+        float scaleFactorUrl = ((float) Math.max(1, w) * 32.0f) / (float) sizeX;
+
         // Create minimal item JSON (no recipe). Ensure it drops 1x1 on break via a drop hint field.
         Path itemOut = MODS_ROOT.resolve(Paths.get("Server", "Item", "Items", "Furniture", "Frames", "Boff_Frame_" + baseName + ".json"));
         Files.createDirectories(itemOut.getParent());
@@ -477,7 +482,9 @@ public class FileHelper {
                 "    \"VariantRotation\": \"NESW\",\n" +
                 "    \"BlockParticleSetId\": \"Wood\",\n" +
                 "    \"BlockSoundSetId\": \"Wood\",\n" +
-                "    \"ParticleColor\": \"#684127\"\n" +
+                "    \"ParticleColor\": \"#684127\",\n" +
+                            "    \"Interactions\": { \"Use\": { \"Interactions\": [ { \"Type\": \"Frames_UseFrameInteraction\" } ] } },\n" +
+                            "    \"CustomModelScale\": " + scaleFactorUrl + "\n" +
                 "  },\n" +
                 "  \"PlayerAnimationsId\": \"Block\",\n" +
                 "  \"IconProperties\": { \"Scale\": 0.68, \"Rotation\": [22.5, 45, 22.5], \"Translation\": [8.5, -19.7] },\n" +
@@ -497,11 +504,15 @@ public class FileHelper {
      * Save the provided image without scaling and create a blockymodel + item JSON
      * matching the image's exact pixel dimensions. Returns the generated item id.
      */
-    public static String addImageAsItemFromImage(BufferedImage image, String providedName) throws IOException {
+    public static String addImageAsItemFromImage(BufferedImage image, String providedName, int blocksX, int blocksY) throws IOException {
         if (image == null) throw new IOException("Provided image is null");
 
-        int sizeX = image.getWidth();
-        int sizeY = image.getHeight();
+        int imgPixelsX = image.getWidth();
+        int imgPixelsY = image.getHeight();
+
+        // Model size in pixels = image pixel dimensions (no cropping)
+        int sizeX = Math.max(1, imgPixelsX);
+        int sizeY = Math.max(1, imgPixelsY);
 
         // Normalize base name same as previous logic
         String baseName = null;
@@ -529,12 +540,14 @@ public class FileHelper {
         // Create blockymodel matching exact pixel size
         Path modelOut = MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames", baseName + ".blockymodel"));
         Files.createDirectories(modelOut.getParent());
+        // We adjust the position to be exactly in the wall
+        float zOffset = ((float) sizeX) / (-blocksX * 2);
         String modelJson = "{\n" +
-                "  \"nodes\": [\n" +
-                "    {\n" +
-                "      \"id\": \"1\",\n" +
-                "      \"name\": \"cube\",\n" +
-                "      \"position\": {\"x\": 0, \"y\": 16, \"z\": -15},\n" +
+            "  \"nodes\": [\n" +
+            "    {\n" +
+            "      \"id\": \"1\",\n" +
+            "      \"name\": \"cube\",\n" +
+            "      \"position\": {\"x\": 0, \"y\": 16, \"z\": " + (int) zOffset + "},\n" +
                 "      \"orientation\": {\"x\": 0, \"y\": 0, \"z\": 0, \"w\": 1},\n" +
                 "      \"shape\": {\n" +
                 "        \"type\": \"box\",\n" +
@@ -564,6 +577,11 @@ public class FileHelper {
                 "}\n";
         Files.writeString(modelOut, modelJson);
 
+        // Compute render scale so the model (which is sized to image pixels) is displayed
+        // at the requested block dimensions. Use horizontal size to compute scale
+        // and preserve aspect ratio by applying the same scale on both axes.
+        float scaleFactor = ((float) Math.max(1, blocksX) * 32.0f) / (float) imgPixelsX;
+
         // Create minimal item JSON (no recipe). Ensure it drops 1x1 on break via a drop hint field.
         Path itemOut = MODS_ROOT.resolve(Paths.get("Server", "Item", "Items", "Furniture", "Frames", "Boff_Frame_" + baseName + ".json"));
         Files.createDirectories(itemOut.getParent());
@@ -587,7 +605,9 @@ public class FileHelper {
                 "    \"VariantRotation\": \"NESW\",\n" +
                 "    \"BlockParticleSetId\": \"Wood\",\n" +
                 "    \"BlockSoundSetId\": \"Wood\",\n" +
-                "    \"ParticleColor\": \"#684127\"\n" +
+                "    \"ParticleColor\": \"#684127\",\n" +
+                            "    \"Interactions\": { \"Use\": { \"Interactions\": [ { \"Type\": \"Frames_UseFrameInteraction\" } ] } },\n" +
+                            "    \"CustomModelScale\": " + scaleFactor + "\n" +
                 "  },\n" +
                 "  \"PlayerAnimationsId\": \"Block\",\n" +
                 "  \"IconProperties\": { \"Scale\": 0.68, \"Rotation\": [22.5, 45, 22.5], \"Translation\": [8.5, -19.7] },\n" +
