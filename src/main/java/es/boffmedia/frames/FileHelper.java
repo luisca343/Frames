@@ -410,12 +410,24 @@ public class FileHelper {
         Files.createDirectories(modelOut.getParent());
         // We adjust the position to be exactly in the wall
         float zOffset = ((float) sizeX) / (-blocksX * 2);
+
+        // Compute render scale so the model (which is sized to image pixels) is displayed
+        // at the requested block dimensions. Use horizontal size to compute scale
+        // and preserve aspect ratio by applying the same scale on both axes.
+        float scaleFactor = ((float) Math.max(1, blocksX) * 32.0f) / (float) imgPixelsX;
+
+        // Derive the vertical block count from the horizontal blocks and image aspect ratio
+        int computedBlocksY = Math.max(1, Math.round((float) blocksX * (float) imgPixelsY / (float) imgPixelsX));
+
+        // Calculate a Y position offset for the model similar to the Z offset calculation.
+        float yOffset = ((float) sizeY) / ((float) computedBlocksY * 3.0f);
+
         String modelJson = "{\n" +
             "  \"nodes\": [\n" +
             "    {\n" +
             "      \"id\": \"1\",\n" +
             "      \"name\": \"cube\",\n" +
-            "      \"position\": {\"x\": 0, \"y\": 16, \"z\": " + (int) zOffset + "},\n" +
+            "      \"position\": {\"x\": 0, \"y\": " + (int) yOffset + ", \"z\": " + (int) zOffset + "},\n" +
                 "      \"orientation\": {\"x\": 0, \"y\": 0, \"z\": 0, \"w\": 1},\n" +
                 "      \"shape\": {\n" +
                 "        \"type\": \"box\",\n" +
@@ -444,11 +456,6 @@ public class FileHelper {
                 "  \"lod\": \"auto\"\n" +
                 "}\n";
         Files.writeString(modelOut, modelJson);
-
-        // Compute render scale so the model (which is sized to image pixels) is displayed
-        // at the requested block dimensions. Use horizontal size to compute scale
-        // and preserve aspect ratio by applying the same scale on both axes.
-        float scaleFactor = ((float) Math.max(1, blocksX) * 32.0f) / (float) imgPixelsX;
 
         // Create minimal item JSON (no recipe). Ensure it drops 1x1 on break via a drop hint field.
         Path itemOut = MODS_ROOT.resolve(Paths.get("Server", "Item", "Items", "Furniture", "Frames", "Boff_Frame_" + baseName + ".json"));
