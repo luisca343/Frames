@@ -420,7 +420,7 @@ public class FileHelper {
         int computedBlocksY = Math.max(1, Math.round((float) blocksX * (float) imgPixelsY / (float) imgPixelsX));
 
         // Calculate a Y position offset for the model similar to the Z offset calculation.
-        float yOffset = ((float) sizeY) / ((float) computedBlocksY * 3.0f);
+        float yOffset = ((float) sizeY) / ((float) computedBlocksY * 2.0f);
 
         String modelJson = "{\n" +
             "  \"nodes\": [\n" +
