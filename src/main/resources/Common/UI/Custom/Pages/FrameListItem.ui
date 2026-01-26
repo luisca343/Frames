@@ -17,7 +17,7 @@ Group {
     Group { Anchor: (Width: 16); }
 
     TextButton #ApplyButton {
-        Text: "APPLY";
+        Text: "COPY";
         Anchor: (Width: 80, Height: 32);
         Style: $C.@SecondaryTextButtonStyle;
     }

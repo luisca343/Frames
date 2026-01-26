@@ -98,7 +98,8 @@ public class ListFramesPage extends InteractiveCustomUIPage<ListFramesPage.ListD
                     if (idx >= 0 && idx < entries.length) {
                         String entry = entries[idx];
                         String id = entry.contains(" — ") ? entry.split(" — ", 2)[0] : entry;
-                        player.sendMessage(Message.raw("Apply selected: " + id));
+                        
+                        player.sendMessage(Message.raw(id));
                     }
                 } catch (Exception ignored) {}
                 this.close();
