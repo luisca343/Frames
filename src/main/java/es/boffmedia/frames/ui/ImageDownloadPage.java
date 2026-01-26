@@ -22,9 +22,12 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import es.boffmedia.frames.FileHelper;
 import es.boffmedia.frames.Frames;
-import es.boffmedia.frames.PermissionsUtil;
+// Permissions check removed; states list deprecated
 import es.boffmedia.frames.interactions.UseFrameInteraction;
 
 import javax.annotation.Nonnull;
@@ -36,7 +39,6 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
         public String url;
         public String name;
         public String sizeXBlocks;
-        public String sizeYBlocks;
         public String stateKey;
 
         public static final BuilderCodec<ImageDownloadData> CODEC = ((BuilderCodec.Builder<ImageDownloadData>) ((BuilderCodec.Builder<ImageDownloadData>)
@@ -48,8 +50,6 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                 .append(new KeyedCodec<>("@NameInput", Codec.STRING), (ImageDownloadData o, String v) -> o.name = v, (ImageDownloadData o) -> o.name)
                 .add()
                 .append(new KeyedCodec<>("@SizeXInput", Codec.STRING), (ImageDownloadData o, String v) -> o.sizeXBlocks = v, (ImageDownloadData o) -> o.sizeXBlocks)
-                .add()
-                .append(new KeyedCodec<>("@SizeYInput", Codec.STRING), (ImageDownloadData o, String v) -> o.sizeYBlocks = v, (ImageDownloadData o) -> o.sizeYBlocks)
                 .add()
                 .append(new KeyedCodec<>("StateKey", Codec.STRING), (ImageDownloadData o, String v) -> o.stateKey = v, (ImageDownloadData o) -> o.stateKey)
                 .add())
@@ -77,93 +77,46 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                 .append("Action", "Upload")
                 .append("@UrlInput", "#UrlInput.Value")
                 .append("@NameInput", "#NameInput.Value")
-                .append("@SizeXInput", "#SizeXInput.Value")
-                .append("@SizeYInput", "#SizeYInput.Value"),
+                .append("@SizeXInput", "#SizeXInput.Value"),
                 false);
 
-        // Populate existing image states into the UI list (if present in JSON)
-        final String statesListRef = "#StatesList";
+        // Prefill inputs from metadata if a frame metadata file exists for this block coords
         try {
-            // Determine sizeKey for the target block (fall back to "1x1")
-            String sizeKey = "1x1";
-            // Determine whether the current player can delete states
-            Player currentPlayerForPerms = store.getComponent(ref, Player.getComponentType());
-            boolean canDelete = false;
-            try {
-                canDelete = currentPlayerForPerms != null && PermissionsUtil.canDeleteFrames(currentPlayerForPerms);
-            } catch (Exception ignored) {}
-            try {
-                long chunkIndex = com.hypixel.hytale.math.util.ChunkUtil.indexChunkFromBlock(this.targetBlock.x, this.targetBlock.z);
-                WorldChunk chunk = this.targetWorld.getChunkIfInMemory(chunkIndex);
-                if (chunk != null) {
-                    BlockType current = chunk.getBlockType(this.targetBlock.x, this.targetBlock.y, this.targetBlock.z);
-                    if (current != null) {
-                        String id = current.getId();
-                        if (id != null) {
-                            java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+)x(\\d+)").matcher(id);
-                            if (m.find()) {
-                                int w = Integer.parseInt(m.group(1));
-                                int h = Integer.parseInt(m.group(2));
-                                sizeKey = (Math.max(1, w)) + "x" + (Math.max(1, h));
+            Path metaDir = FileHelper.MODS_ROOT.resolve("Frames");
+            if (Files.exists(metaDir) && Files.isDirectory(metaDir)) {
+                try (java.util.stream.Stream<Path> stream = Files.list(metaDir)) {
+                    java.util.Iterator<Path> it = stream.iterator();
+                    while (it.hasNext()) {
+                        Path p = it.next();
+                        try {
+                            if (!Files.isRegularFile(p)) continue;
+                            String txt = Files.readString(p);
+                            org.bson.BsonDocument meta = org.bson.BsonDocument.parse(txt);
+                            if (!meta.containsKey("coords")) continue;
+                            org.bson.BsonDocument coords = meta.getDocument("coords");
+                            int mx = coords.getInt32("x").getValue();
+                            int my = coords.getInt32("y").getValue();
+                            int mz = coords.getInt32("z").getValue();
+                            if (mx == this.targetBlock.x && my == this.targetBlock.y && mz == this.targetBlock.z) {
+                                String mname = meta.containsKey("name") ? meta.getString("name").getValue() : "";
+                                String murl = meta.containsKey("url") ? meta.getString("url").getValue() : "";
+                                int mbx = 1;
+                                if (meta.containsKey("blocks")) {
+                                    org.bson.BsonDocument b = meta.getDocument("blocks");
+                                    if (b.containsKey("x")) mbx = b.getInt32("x").getValue();
+                                }
+                                try { uiCommandBuilder.set("#NameInput.Value", mname); } catch (Exception ignore) {}
+                                try { uiCommandBuilder.set("#UrlInput.Value", murl); } catch (Exception ignore) {}
+                                try { uiCommandBuilder.set("#SizeXInput.Value", Integer.toString(mbx)); } catch (Exception ignore) {}
+                                break;
                             }
-                        }
-                    }
-                }
-            } catch (Exception ignored) {}
-
-            org.bson.BsonDocument doc = FileHelper.loadOrCreateDocument(sizeKey);
-            if (doc != null && doc.containsKey("BlockType")) {
-                org.bson.BsonDocument blockType = doc.getDocument("BlockType");
-                if (blockType.containsKey("State")) {
-                    org.bson.BsonDocument state = blockType.getDocument("State");
-                    if (state.containsKey("Definitions")) {
-                        org.bson.BsonDocument defs = state.getDocument("Definitions");
-                        java.util.List<String> keys = new java.util.ArrayList<>(defs.keySet());
-                        uiCommandBuilder.clear(statesListRef);
-                        for (int i = 0; i < keys.size(); i++) {
-                            String key = keys.get(i);
-                            String texture = "";
-                            try {
-                                org.bson.BsonDocument def = defs.getDocument(key);
-                                if (def.containsKey("CustomModelTexture")) {
-                                    org.bson.BsonArray texArr = def.getArray("CustomModelTexture");
-                                    if (texArr.size() > 0 && texArr.get(0).isDocument()) {
-                                        org.bson.BsonDocument texDoc = texArr.get(0).asDocument();
-                                        if (texDoc.containsKey("Texture")) texture = texDoc.getString("Texture").getValue();
-                                    }
-                                }
-                            } catch (Exception ignored) {}
-
-                            uiCommandBuilder.append(statesListRef, "Pages/FrameStateItem.ui");
-                            String instancePrefix = statesListRef + "[" + i + "]";
-
-                            String escapedTex = texture.replace("\"", "\\\"");
-
-                            // Extract filename only from texture path (e.g. Blocks/Frames/1x1/FRAME_x.png -> FRAME_x.png)
-                            String fileNameOnly = escapedTex;
-                            int slash = fileNameOnly.lastIndexOf('/');
-                            if (slash >= 0 && slash + 1 < fileNameOnly.length()) fileNameOnly = fileNameOnly.substring(slash + 1);
-
-                            // Set filename label on the appended instance
-                            uiCommandBuilder.set(instancePrefix + " #FileNameLabel.Text", fileNameOnly);
-
-                                // Bind the Apply button for this specific instance
-                                uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, instancePrefix + " #ApplyButton",
-                                    new EventData().append("Action", "Apply").append("StateKey", key), false);
-
-                                // Set visibility for the Delete button based on perms and bind only if allowed
-                                uiCommandBuilder.set(instancePrefix + " #DeleteButton.Visible", canDelete);
-                                if (canDelete) {
-                                uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, instancePrefix + " #DeleteButton",
-                                    new EventData().append("Action", "Delete").append("StateKey", key), false);
-                                }
+                        } catch (Exception ignoredMeta) {
+                            Frames.LOGGER.atWarning().withCause(ignoredMeta).log("Failed to read metadata file: " + p);
                         }
                     }
                 }
             }
-        } catch (java.io.IOException ioe) {
-            Frames.LOGGER.atWarning().withCause(ioe).log("Failed to read frame JSON for UI: " + ioe.getMessage());
-        }
+        } catch (Exception ignored) {}
     }
 
     @Override
@@ -213,15 +166,30 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                     java.awt.image.BufferedImage img = FileHelper.downloadImage(url);
 
                     int blocksX = 1;
-                    int blocksY = 1;
                     try {
                         if (data.sizeXBlocks != null && !data.sizeXBlocks.trim().isEmpty()) blocksX = Math.max(1, Integer.parseInt(data.sizeXBlocks.trim()));
                     } catch (Exception ignored) {}
-                    try {
-                        if (data.sizeYBlocks != null && !data.sizeYBlocks.trim().isEmpty()) blocksY = Math.max(1, Integer.parseInt(data.sizeYBlocks.trim()));
-                    } catch (Exception ignored) {}
 
-                    String itemId = FileHelper.addImageAsItemFromImage(img, data.name, blocksX, blocksY);
+                    // Maintain aspect ratio: blocksY is derived from image dimensions when saving; pass blocksX only
+                    String itemId = FileHelper.addImageAsItemFromImage(img, data.name, blocksX, blocksX);
+
+                    // Write metadata JSON for the created frame into mods/BoffmediaFrames/Frames/<itemId>.json
+                    try {
+                        Path metaDir = FileHelper.MODS_ROOT.resolve("Frames");
+                        Files.createDirectories(metaDir);
+                        Path metaFile = metaDir.resolve(itemId + ".json");
+                        String metaJson = "{\n" +
+                                "  \"itemId\": \"" + itemId + "\",\n" +
+                                "  \"name\": \"" + (data.name == null ? "" : data.name.replace("\"", "\\\"")) + "\",\n" +
+                                "  \"url\": \"" + (data.url == null ? "" : data.url.replace("\"", "\\\"")) + "\",\n" +
+                                "  \"coords\": { \"x\": " + this.targetBlock.x + ", \"y\": " + this.targetBlock.y + ", \"z\": " + this.targetBlock.z + " },\n" +
+                                "  \"blocks\": { \"x\": " + blocksX + " },\n" +
+                                "  \"createdAt\": \"" + java.time.Instant.now().toString() + "\"\n" +
+                                "}\n";
+                        Files.writeString(metaFile, metaJson);
+                    } catch (IOException ioe) {
+                        Frames.LOGGER.atWarning().withCause(ioe).log("Failed to write frame metadata: " + ioe.getMessage());
+                    }
 
                     // Close UI and delay applying the new block so assets have time to sync
                     this.close();

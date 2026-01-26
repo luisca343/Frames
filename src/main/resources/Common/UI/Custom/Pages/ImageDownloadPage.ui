@@ -1,13 +1,13 @@
 $C = "../Common.ui";
 
 Group {
-    Anchor: (Width: 650, Height: 450);
+    Anchor: (Width: 650, Height: 350);
     Background: #1a1a2e(0.96);
     LayoutMode: Top;
     Padding: (Full: 16);
 
     Label #Title {
-        Text: "Download Image";
+        Text: "Picture Frame";
         Anchor: (Height: 36);
         Style: (FontSize: 20, TextColor: #ffffff, HorizontalAlignment: Center, RenderBold: true);
     }
@@ -62,7 +62,7 @@ Group {
 
         Label {
             Text: "Size X (blocks):";
-            Anchor: (Width: 100);
+            Anchor: (Width: 140);
             Style: (FontSize: 15, TextColor: #96a9be, VerticalAlignment: Center, RenderBold: true);
         }
 
@@ -74,19 +74,7 @@ Group {
             PlaceholderText: "1";
         }
 
-        Label {
-            Text: "Size Y (blocks):";
-            Anchor: (Width: 100);
-            Style: (FontSize: 15, TextColor: #96a9be, VerticalAlignment: Center, RenderBold: true);
-        }
-
-        $C.@TextField #SizeYInput {
-            FlexWeight: 1;
-            Anchor: (Height: 40);
-            Padding: (Horizontal: 12);
-            Background: #0f1621;
-            PlaceholderText: "1";
-        }
+        /* Size Y removed — aspect ratio preserved automatically */
     }
 
     Group { Anchor: (Height: 8); }
@@ -110,11 +98,5 @@ Group {
         Visible: false;
     }
 
-    Group #StatesList {
-        FlexWeight: 1;
-        LayoutMode: TopScrolling;
-        Background: #0f1621(0.7);
-        Padding: (Full: 8);
-        ScrollbarStyle: $C.@DefaultScrollbarStyle;
-    }
+    /* States list deprecated and removed from view; kept file for compatibility */
 }

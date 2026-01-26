@@ -68,12 +68,4 @@ Group {
         Anchor: (Width: 0, Height: 0);
         Visible: false;
     }
-
-    Group #StatesList {
-        FlexWeight: 1;
-        LayoutMode: TopScrolling;
-        Background: #0f1621(0.7);
-        Padding: (Full: 8);
-        ScrollbarStyle: $C.@DefaultScrollbarStyle;
-    }
 }

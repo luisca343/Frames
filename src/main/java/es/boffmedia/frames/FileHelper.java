@@ -40,11 +40,11 @@ public class FileHelper {
         }
 
         private static Path textureDirFor(String sizeKey) {
-            return MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames", sizeKey));
+                return MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames", "Images"));
         }
 
         private static Path texturePathFor(String sizeKey, String fileName) {
-            return textureDirFor(sizeKey).resolve(fileName);
+                return textureDirFor(sizeKey).resolve(fileName);
         }
 
         // Default JSON is stored in resources/Default Boff_Frame.json
@@ -324,7 +324,7 @@ public class FileHelper {
         // Save image file inside size-specific subfolder
         String fileName = baseName + ".png";
         Path out = saveImageToMods(scaled, fileName, sizeKey);
-        String texturePath = "Blocks/Frames/" + sizeKey + "/" + fileName;
+        String texturePath = "Blocks/Frames/Images/" + fileName;
 
         // Insert state into document, ensuring unique key
         BsonDocument doc = loadOrCreateDocument(sizeKey);
@@ -369,138 +369,6 @@ public class FileHelper {
     }
 
     /**
-     * Legacy method: previous workflow inserted states into an existing frame JSON.
-     * New workflow creates a dedicated blockymodel + item JSON per image. Prefer
-     * {@link #addImageAsItemFromUrl(String, int, int, String)}.
-     */
-    @Deprecated
-    public static String addImageStateFromUrl_legacy(String urlStr, int sizeX, int sizeY, String providedName) throws IOException {
-        return addImageStateFromUrl(urlStr, sizeX, sizeY, providedName);
-    }
-
-    /**
-     * Create a dedicated blockymodel and minimal item JSON for the exact image size.
-     * The image file will be saved under `mods/BoffmediaFrames/Common/Blocks/Frames/<sizeKey>/<name>.png`.
-     * The blockymodel will be at `mods/BoffmediaFrames/Common/Blocks/Frames/<name>.blockymodel` and
-     * the item JSON at `mods/BoffmediaFrames/Server/Item/Items/Furniture/Frames/Boff_Frame_<name>.json`.
-     * Returns the generated item id (Boff_Frame_<name>).
-     */
-    public static String addImageAsItemFromUrl(String urlStr, int sizeX, int sizeY) throws IOException {
-        return addImageAsItemFromUrl(urlStr, sizeX, sizeY, null);
-    }
-
-    public static String addImageAsItemFromUrl(String urlStr, int sizeX, int sizeY, String providedName) throws IOException {
-        // Download and scale image to exact pixel dimensions requested
-        BufferedImage image = downloadImage(urlStr);
-        BufferedImage scaled = resizeImage(image, sizeX, sizeY);
-
-        // Normalize base name same as previous logic
-        String baseName = null;
-        if (providedName != null) {
-            String n = providedName.trim();
-            if (!n.isEmpty()) {
-                n = n.replaceAll("\\s+", "_");
-                if (n.length() == 1) n = n.toUpperCase();
-                else n = n.substring(0, 1).toUpperCase() + n.substring(1).toLowerCase();
-                baseName = n;
-            }
-        }
-        if (baseName == null || baseName.isEmpty()) baseName = generateRandomName(8);
-
-        // sizeKey remains based on 32px steps (used for texture folder)
-        int w = Math.max(1, sizeX / 32);
-        int h = Math.max(1, sizeY / 32);
-        String sizeKey = w + "x" + h;
-
-        String fileName = baseName + ".png";
-        Path outImage = saveImageToMods(scaled, fileName, sizeKey);
-        String texturePath = "Blocks/Frames/" + sizeKey + "/" + fileName;
-
-        // Create a simple blockymodel matching exact pixel size
-        Path modelOut = MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames", baseName + ".blockymodel"));
-        Files.createDirectories(modelOut.getParent());
-        float zOffsetUrl = ((float) sizeX) / -8f;
-        String modelJson = "{\n" +
-            "  \"nodes\": [\n" +
-            "    {\n" +
-            "      \"id\": \"1\",\n" +
-            "      \"name\": \"cube\",\n" +
-            "      \"position\": {\"x\": 0, \"y\": 16, \"z\": -113},\n" +
-                "      \"orientation\": {\"x\": 0, \"y\": 0, \"z\": 0, \"w\": 1},\n" +
-                "      \"shape\": {\n" +
-                "        \"type\": \"box\",\n" +
-                "        \"offset\": {\"x\": 0, \"y\": 0, \"z\": 0},\n" +
-                "        \"stretch\": {\"x\": 1, \"y\": 1, \"z\": 1},\n" +
-                "        \"settings\": {\n" +
-                "          \"isPiece\": false,\n" +
-                "          \"size\": {\"x\": " + sizeX + ", \"y\": " + sizeY + ", \"z\": 2},\n" +
-                "          \"isStaticBox\": true\n" +
-                "        },\n" +
-                "        \"textureLayout\": {\n" +
-                "          \"back\": { \"angle\": 0 },\n" +
-                "          \"right\": { \"angle\": 0 },\n" +
-                "          \"front\": { \"angle\": 0 },\n" +
-                "          \"left\": { \"angle\": 0 },\n" +
-                "          \"top\": { \"angle\": 0 }\n" +
-                "        },\n" +
-                "        \"unwrapMode\": \"custom\",\n" +
-                "        \"visible\": true,\n" +
-                "        \"doubleSided\": false,\n" +
-                "        \"shadingMode\": \"flat\"\n" +
-                "      }\n" +
-                "    }\n" +
-                "  ],\n" +
-                "  \"format\": \"prop\",\n" +
-                "  \"lod\": \"auto\"\n" +
-                "}\n";
-        Files.writeString(modelOut, modelJson);
-
-        // Compute render scale so the model (which is sized to the model pixels) is displayed
-        // at the requested block dimensions. Use horizontal size to compute scale.
-        float scaleFactorUrl = ((float) Math.max(1, w) * 32.0f) / (float) sizeX;
-
-        // Create minimal item JSON (no recipe). Ensure it drops 1x1 on break via a drop hint field.
-        Path itemOut = MODS_ROOT.resolve(Paths.get("Server", "Item", "Items", "Furniture", "Frames", "Boff_Frame_" + baseName + ".json"));
-        Files.createDirectories(itemOut.getParent());
-        String itemJson = "{\n" +
-                "  \"TranslationProperties\": {\n" +
-                "    \"Name\": \"frames." + baseName + ".name\",\n" +
-                "    \"Description\": \"frames." + baseName + ".description\"\n" +
-                "  },\n" +
-                "  \"Categories\": [\n" +
-                "    \"Blocks.Deco\"\n" +
-                "  ],\n" +
-                "  \"BlockType\": {\n" +
-                "    \"InteractionHint\": \"frames.use_hint\",\n" +
-                "    \"Material\": \"Solid\",\n" +
-                "    \"DrawType\": \"Model\",\n" +
-                "    \"Opacity\": \"Transparent\",\n" +
-                "    \"CustomModel\": \"Blocks/Frames/" + baseName + ".blockymodel\",\n" +
-                "    \"Flags\": { \"IsUsable\": true },\n" +
-                "    \"CustomModelTexture\": [ { \"Texture\": \"" + texturePath + "\" } ],\n" +
-                "    \"HitboxType\": \"Painting\",\n" +
-                "    \"VariantRotation\": \"NESW\",\n" +
-                "    \"BlockParticleSetId\": \"Wood\",\n" +
-                "    \"BlockSoundSetId\": \"Wood\",\n" +
-                "    \"ParticleColor\": \"#684127\",\n" +
-                            "    \"Interactions\": { \"Use\": { \"Interactions\": [ { \"Type\": \"Frames_UseFrameInteraction\" } ] } },\n" +
-                            "    \"CustomModelScale\": " + scaleFactorUrl + "\n" +
-                "  },\n" +
-                "  \"PlayerAnimationsId\": \"Block\",\n" +
-                "  \"IconProperties\": { \"Scale\": 0.68, \"Rotation\": [22.5, 45, 22.5], \"Translation\": [8.5, -19.7] },\n" +
-                "  \"ResourceTypes\": [],\n" +
-                "  \"Tags\": {},\n" +
-                "  \"Icon\": \"Icons/ItemsGenerated/Boff_Frame_1x1.png\",\n" +
-                "  \"DropOnBreak\": \"Boff_Frame_1x1\"\n" +
-                "}\n";
-        Files.writeString(itemOut, itemJson);
-
-        String itemId = "Boff_Frame_" + baseName;
-        Frames.LOGGER.atInfo().log("Created dynamic item " + itemId + " model=" + modelOut + " image=" + outImage + " json=" + itemOut);
-        return itemId;
-    }
-
-    /**
      * Save the provided image without scaling and create a blockymodel + item JSON
      * matching the image's exact pixel dimensions. Returns the generated item id.
      */
@@ -535,7 +403,7 @@ public class FileHelper {
         String fileName = baseName + ".png";
         // Save image as-is
         Path out = saveImageToMods(image, fileName, sizeKey);
-        String texturePath = "Blocks/Frames/" + sizeKey + "/" + fileName;
+        String texturePath = "Blocks/Frames/Images/" + fileName;
 
         // Create blockymodel matching exact pixel size
         Path modelOut = MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames", baseName + ".blockymodel"));
