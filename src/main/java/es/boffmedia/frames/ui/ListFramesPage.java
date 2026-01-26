@@ -9,6 +9,7 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.Message;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import es.boffmedia.frames.FileHelper;
 import es.boffmedia.frames.Frames;
 import es.boffmedia.frames.PermissionsUtil;
@@ -113,16 +114,74 @@ public class ListFramesPage extends InteractiveCustomUIPage<ListFramesPage.ListD
                         }
                         String entry = entries[idx];
                         String id = entry.contains(" — ") ? entry.split(" — ", 2)[0] : entry;
+                        // Attempt to delete all files related to this generated frame
+                        String baseName = id.startsWith("Boff_Frame_") ? id.substring("Boff_Frame_".length()) : null;
+
+                        // 1) Delete metadata file under mods/BoffmediaFrames/Frames/<id>.json
                         Path meta = FileHelper.MODS_ROOT.resolve("Frames").resolve(id + ".json");
                         try {
                             if (Files.exists(meta)) {
                                 Files.delete(meta);
                                 player.sendMessage(Message.raw("El archivo de metadatos " + id + " ha sido eliminado."));
-                            } else {
-                                player.sendMessage(Message.raw("Archivo no encontrado: " + meta.toString()));
                             }
                         } catch (Exception e) {
-                            player.sendMessage(Message.raw("Error eliminando: " + e.getMessage()));
+                            player.sendMessage(Message.raw("Error eliminando metadatos: " + e.getMessage()));
+                        }
+
+                        // 2) Delete generated item JSON
+                        try {
+                            Path item = FileHelper.MODS_ROOT.resolve(Paths.get("Server", "Item", "Items", "Furniture", "Frames", id + ".json"));
+                            if (Files.exists(item)) {
+                                Files.delete(item);
+                                player.sendMessage(Message.raw("Archivo de item eliminado: " + item.getFileName().toString()));
+                            }
+                        } catch (Exception e) {
+                            player.sendMessage(Message.raw("Error eliminando item JSON: " + e.getMessage()));
+                        }
+
+                        // 3) Delete blockymodel and image files if we can derive the base name
+                        if (baseName != null) {
+                            try {
+                                Path model = FileHelper.MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames", baseName + ".blockymodel"));
+                                if (Files.exists(model)) {
+                                    Files.delete(model);
+                                    player.sendMessage(Message.raw("Modelo eliminado: " + model.getFileName().toString()));
+                                }
+                            } catch (Exception e) {
+                                player.sendMessage(Message.raw("Error eliminando blockymodel: " + e.getMessage()));
+                            }
+
+                            try {
+                                Path img = FileHelper.MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames", "Images", baseName + ".png"));
+                                if (Files.exists(img)) {
+                                    Files.delete(img);
+                                    player.sendMessage(Message.raw("Imagen eliminada: " + img.getFileName().toString()));
+                                }
+                            } catch (Exception e) {
+                                player.sendMessage(Message.raw("Error eliminando imagen: " + e.getMessage()));
+                            }
+                        }
+
+                        // 4) Remove any state definitions referencing this id across all frame JSON sizes
+                        try {
+                            boolean anyRemoved = false;
+                            for (String sk : FileHelper.FRAME_SIZES) {
+                                try {
+                                    boolean removed = FileHelper.removeImageState(sk, id);
+                                    if (removed) {
+                                        anyRemoved = true;
+                                        player.sendMessage(Message.raw("Removed state " + id + " from frame json: " + sk));
+                                    }
+                                } catch (Exception inner) {
+                                    // non-fatal per-size failure
+                                }
+                            }
+                            if (!anyRemoved) {
+                                // inform optionally that nothing was found in state definitions
+                                // (but avoid spamming if we've already deleted files above)
+                            }
+                        } catch (Exception e) {
+                            player.sendMessage(Message.raw("Error removiendo state definitions: " + e.getMessage()));
                         }
                     }
                 } catch (Exception ignored) {}

@@ -272,6 +272,203 @@ public class FileHelper {
         Files.createDirectories(pj.getParent());
         Files.writeString(pj, pretty);
     }
+
+    /**
+     * Write a small metadata JSON file describing a created frame item.
+     * Stored under mods/BoffmediaFrames/Frames/<itemId>.json
+     */
+    public static void writeFrameMetadata(String itemId, String name, String url, int x, int y, int z, int blocksX) throws IOException {
+        Path metaDir = MODS_ROOT.resolve("Frames");
+        Files.createDirectories(metaDir);
+        Path metaFile = metaDir.resolve(itemId + ".json");
+        // Before adding a new instance, remove any existing entries at the same coords
+        try {
+            removeInstancesAtCoords(x, y, z);
+        } catch (Exception e) {
+            Frames.LOGGER.atWarning().withCause(e).log("Failed to remove preexisting instances at coords: " + e.getMessage());
+        }
+
+        BsonDocument doc;
+        if (Files.exists(metaFile)) {
+            try {
+                String existing = Files.readString(metaFile);
+                doc = BsonDocument.parse(existing);
+            } catch (Exception e) {
+                doc = new BsonDocument();
+            }
+        } else {
+            doc = new BsonDocument();
+        }
+
+        // Ensure top-level metadata fields
+        if (!doc.containsKey("itemId")) doc.append("itemId", new org.bson.BsonString(itemId == null ? "" : itemId));
+        if (name != null && !name.isEmpty()) doc.append("name", new org.bson.BsonString(name));
+        else if (!doc.containsKey("name")) doc.append("name", new org.bson.BsonString(""));
+        if (url != null && !url.isEmpty()) doc.append("url", new org.bson.BsonString(url));
+        else if (!doc.containsKey("url")) doc.append("url", new org.bson.BsonString(""));
+        if (!doc.containsKey("createdAt")) doc.append("createdAt", new org.bson.BsonString(java.time.Instant.now().toString()));
+
+        // Build the frame instance entry
+        BsonDocument frameEntry = new BsonDocument();
+        BsonDocument coords = new BsonDocument();
+        coords.append("x", new org.bson.BsonInt32(x));
+        coords.append("y", new org.bson.BsonInt32(y));
+        coords.append("z", new org.bson.BsonInt32(z));
+        frameEntry.append("coords", coords);
+
+        BsonDocument blocks = new BsonDocument();
+        blocks.append("x", new org.bson.BsonInt32(blocksX));
+        frameEntry.append("blocks", blocks);
+
+        frameEntry.append("createdAt", new org.bson.BsonString(java.time.Instant.now().toString()));
+
+        // Append into frames array
+        if (!doc.containsKey("frames")) doc.append("frames", new BsonArray());
+        BsonArray arr = doc.getArray("frames");
+        arr.add(frameEntry);
+
+        JsonWriterSettings settings = JsonWriterSettings.builder().indent(true).build();
+        Files.writeString(metaFile, doc.toJson(settings));
+
+        // Also register this instance in the global frames index for quick lookup by coords
+        try {
+            registerFrameInstanceInIndex(itemId, metaFile.getFileName().toString(), x, y, z, blocksX);
+        } catch (Exception e) {
+            Frames.LOGGER.atWarning().withCause(e).log("Failed to update frames index: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Maintain a global index of frame instances for quick coord->item lookups.
+     * Stored at mods/BoffmediaFrames/FramesIndex.json with structure:
+     * { "items": { "Boff_Frame_X": [ { "metaFile": "Boff_Frame_X.json", "coords": {...}, "blocks": {...}, "createdAt": "..." }, ... ] } }
+     */
+    public static void registerFrameInstanceInIndex(String itemId, String metaFileName, int x, int y, int z, int blocksX) throws IOException {
+        Path indexFile = MODS_ROOT.resolve("FramesIndex.json");
+        BsonDocument indexDoc;
+        if (Files.exists(indexFile)) {
+            try {
+                String existing = Files.readString(indexFile);
+                indexDoc = BsonDocument.parse(existing);
+            } catch (Exception e) {
+                indexDoc = new BsonDocument();
+            }
+        } else {
+            indexDoc = new BsonDocument();
+        }
+
+        if (!indexDoc.containsKey("items")) indexDoc.append("items", new BsonDocument());
+        BsonDocument items = indexDoc.getDocument("items");
+
+        if (!items.containsKey(itemId)) items.append(itemId, new BsonArray());
+        BsonArray arr = items.getArray(itemId);
+
+        BsonDocument entry = new BsonDocument();
+        entry.append("metaFile", new org.bson.BsonString(metaFileName == null ? "" : metaFileName));
+        BsonDocument coords = new BsonDocument();
+        coords.append("x", new org.bson.BsonInt32(x));
+        coords.append("y", new org.bson.BsonInt32(y));
+        coords.append("z", new org.bson.BsonInt32(z));
+        entry.append("coords", coords);
+        BsonDocument blocks = new BsonDocument();
+        blocks.append("x", new org.bson.BsonInt32(blocksX));
+        entry.append("blocks", blocks);
+        entry.append("createdAt", new org.bson.BsonString(java.time.Instant.now().toString()));
+
+        arr.add(entry);
+
+        JsonWriterSettings settings = JsonWriterSettings.builder().indent(true).build();
+        Files.writeString(indexFile, indexDoc.toJson(settings));
+    }
+
+    /**
+     * Remove any indexed instances and per-item metadata frames entries that match the provided coords.
+     * This ensures a single authoritative instance exists at a given coordinate when a new one is applied.
+     */
+    public static void removeInstancesAtCoords(int x, int y, int z) throws IOException {
+        Path indexFile = MODS_ROOT.resolve("FramesIndex.json");
+        if (!Files.exists(indexFile)) return;
+
+        String existing = Files.readString(indexFile);
+        BsonDocument indexDoc = BsonDocument.parse(existing);
+        if (!indexDoc.containsKey("items")) return;
+
+        BsonDocument items = indexDoc.getDocument("items");
+        java.util.List<String> toUpdateMetaFiles = new java.util.ArrayList<>();
+
+        for (String itemId : items.keySet()) {
+            BsonArray arr = items.getArray(itemId);
+            BsonArray newArr = new BsonArray();
+            for (int i = 0; i < arr.size(); i++) {
+                try {
+                    BsonDocument inst = arr.get(i).asDocument();
+                    boolean match = false;
+                    if (inst.containsKey("coords")) {
+                        BsonDocument c = inst.getDocument("coords");
+                        int mx = c.getInt32("x").getValue();
+                        int my = c.getInt32("y").getValue();
+                        int mz = c.getInt32("z").getValue();
+                        if (mx == x && my == y && mz == z) match = true;
+                    }
+                    if (match) {
+                        // mark referenced metaFile for cleanup
+                        if (inst.containsKey("metaFile")) {
+                            try { toUpdateMetaFiles.add(inst.getString("metaFile").getValue()); } catch (Exception ignore) {}
+                        }
+                        // skip adding to newArr -> effectively removed
+                    } else {
+                        newArr.add(inst);
+                    }
+                } catch (Exception e) {
+                    // if parsing fails, keep original entry to avoid data loss
+                    newArr.add(arr.get(i));
+                }
+            }
+
+            if (newArr.size() == 0) {
+                items.remove(itemId);
+            } else {
+                items.append(itemId, newArr);
+            }
+        }
+
+        // Write back updated index
+        JsonWriterSettings settings = JsonWriterSettings.builder().indent(true).build();
+        Files.writeString(indexFile, indexDoc.toJson(settings));
+
+        // For each meta file referenced, remove any frame entries at these coords
+        for (String metaFileName : toUpdateMetaFiles) {
+            try {
+                Path metaPath = MODS_ROOT.resolve("Frames").resolve(metaFileName);
+                if (!Files.exists(metaPath) || !Files.isRegularFile(metaPath)) continue;
+                String metaTxt = Files.readString(metaPath);
+                BsonDocument metaDoc = BsonDocument.parse(metaTxt);
+                if (!metaDoc.containsKey("frames")) continue;
+                BsonArray framesArr = metaDoc.getArray("frames");
+                BsonArray newFrames = new BsonArray();
+                for (int i = 0; i < framesArr.size(); i++) {
+                    try {
+                        BsonDocument fe = framesArr.get(i).asDocument();
+                        boolean match = false;
+                        if (fe.containsKey("coords")) {
+                            BsonDocument c = fe.getDocument("coords");
+                            int mx = c.getInt32("x").getValue();
+                            int my = c.getInt32("y").getValue();
+                            int mz = c.getInt32("z").getValue();
+                            if (mx == x && my == y && mz == z) match = true;
+                        }
+                        if (!match) newFrames.add(fe);
+                    } catch (Exception e) {
+                        newFrames.add(framesArr.get(i));
+                    }
+                }
+                metaDoc.append("frames", newFrames);
+                Files.writeString(metaPath, metaDoc.toJson(settings));
+            } catch (Exception e) {
+                Frames.LOGGER.atWarning().withCause(e).log("Failed cleaning meta file " + metaFileName + ": " + e.getMessage());
+            }
+        }
+    }
     
     /**
      * Save the provided image without scaling and create a blockymodel + item JSON

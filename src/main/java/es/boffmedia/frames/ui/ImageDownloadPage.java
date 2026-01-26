@@ -87,50 +87,57 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                 .append("@StateKey", "#StateKeyInput.Value"),
                 false);
 
-        // Prefill inputs from metadata if a frame metadata file exists for this block coords
+        // Prefill inputs from the global frames index by coords for quick lookup
         try {
-            Path metaDir = FileHelper.MODS_ROOT.resolve("Frames");
-            if (Files.exists(metaDir) && Files.isDirectory(metaDir)) {
-                try (java.util.stream.Stream<Path> stream = Files.list(metaDir)) {
-                    java.util.Iterator<Path> it = stream.iterator();
-                    while (it.hasNext()) {
-                        Path p = it.next();
-                        try {
-                            if (!Files.isRegularFile(p)) continue;
-                            String txt = Files.readString(p);
-                            org.bson.BsonDocument meta = org.bson.BsonDocument.parse(txt);
-                            if (!meta.containsKey("coords")) continue;
-                            org.bson.BsonDocument coords = meta.getDocument("coords");
-                            int mx = coords.getInt32("x").getValue();
-                            int my = coords.getInt32("y").getValue();
-                            int mz = coords.getInt32("z").getValue();
-                            if (mx == this.targetBlock.x && my == this.targetBlock.y && mz == this.targetBlock.z) {
-                                String mname = meta.containsKey("name") ? meta.getString("name").getValue() : "";
-                                String murl = meta.containsKey("url") ? meta.getString("url").getValue() : "";
-                                int mbx = 1;
-                                if (meta.containsKey("blocks")) {
-                                    org.bson.BsonDocument b = meta.getDocument("blocks");
-                                    if (b.containsKey("x")) mbx = b.getInt32("x").getValue();
+            Path indexFile = FileHelper.MODS_ROOT.resolve("FramesIndex.json");
+            if (Files.exists(indexFile) && Files.isRegularFile(indexFile)) {
+                try {
+                    String idxTxt = Files.readString(indexFile);
+                    org.bson.BsonDocument idxDoc = org.bson.BsonDocument.parse(idxTxt);
+                    if (idxDoc.containsKey("items")) {
+                        org.bson.BsonDocument items = idxDoc.getDocument("items");
+                        outer: for (String itemId : items.keySet()) {
+                            try {
+                                org.bson.BsonArray arr = items.getArray(itemId);
+                                for (int ai = 0; ai < arr.size(); ai++) {
+                                    org.bson.BsonDocument inst = arr.get(ai).asDocument();
+                                    if (!inst.containsKey("coords")) continue;
+                                    org.bson.BsonDocument c = inst.getDocument("coords");
+                                    int mx = c.getInt32("x").getValue();
+                                    int my = c.getInt32("y").getValue();
+                                    int mz = c.getInt32("z").getValue();
+                                    if (mx == this.targetBlock.x && my == this.targetBlock.y && mz == this.targetBlock.z) {
+                                        String metaFile = inst.containsKey("metaFile") ? inst.getString("metaFile").getValue() : (itemId + ".json");
+                                        Path metaPath = FileHelper.MODS_ROOT.resolve("Frames").resolve(metaFile);
+                                        if (Files.exists(metaPath) && Files.isRegularFile(metaPath)) {
+                                            try {
+                                                String metaTxt = Files.readString(metaPath);
+                                                org.bson.BsonDocument meta = org.bson.BsonDocument.parse(metaTxt);
+                                                String mname = meta.containsKey("name") ? meta.getString("name").getValue() : "";
+                                                String murl = meta.containsKey("url") ? meta.getString("url").getValue() : "";
+                                                int mbx = 1;
+                                                if (inst.containsKey("blocks")) {
+                                                    org.bson.BsonDocument b = inst.getDocument("blocks");
+                                                    if (b.containsKey("x")) mbx = b.getInt32("x").getValue();
+                                                }
+                                                try { uiCommandBuilder.set("#NameInput.Value", mname); } catch (Exception ignore) {}
+                                                try { uiCommandBuilder.set("#UrlInput.Value", murl); } catch (Exception ignore) {}
+                                                try { uiCommandBuilder.set("#SizeXInput.Value", Integer.toString(mbx)); } catch (Exception ignore) {}
+                                                try { uiCommandBuilder.set("#StateKeyInput.Value", itemId); } catch (Exception ignore) {}
+                                            } catch (Exception e) {
+                                                Frames.LOGGER.atWarning().withCause(e).log("Failed to read referenced metadata: " + metaPath);
+                                            }
+                                        }
+                                        break outer;
+                                    }
                                 }
-                                try { uiCommandBuilder.set("#NameInput.Value", mname); } catch (Exception ignore) {}
-                                try { uiCommandBuilder.set("#UrlInput.Value", murl); } catch (Exception ignore) {}
-                                try { uiCommandBuilder.set("#SizeXInput.Value", Integer.toString(mbx)); } catch (Exception ignore) {}
-                                try {
-                                    String mid = "";
-                                    if (meta.containsKey("itemId")) {
-                                        try { mid = meta.getString("itemId").getValue(); } catch (Exception ignoreId) { mid = ""; }
-                                    }
-                                    if (mid == null || mid.isEmpty()) {
-                                        try { mid = p.getFileName().toString().replaceFirst("\\.json$", ""); } catch (Exception ignoreName) { mid = ""; }
-                                    }
-                                    if (mid != null && !mid.isEmpty()) uiCommandBuilder.set("#StateKeyInput.Value", mid);
-                                } catch (Exception ignore) {}
-                                break;
+                            } catch (Exception ignoreItem) {
+                                // ignore per-item errors
                             }
-                        } catch (Exception ignoredMeta) {
-                            Frames.LOGGER.atWarning().withCause(ignoredMeta).log("Failed to read metadata file: " + p);
                         }
                     }
+                } catch (Exception e) {
+                    Frames.LOGGER.atWarning().withCause(e).log("Failed to read frames index: " + e.getMessage());
                 }
             }
         } catch (Exception ignored) {}
@@ -192,18 +199,7 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
 
                     // Write metadata JSON for the created frame into mods/BoffmediaFrames/Frames/<itemId>.json
                     try {
-                        Path metaDir = FileHelper.MODS_ROOT.resolve("Frames");
-                        Files.createDirectories(metaDir);
-                        Path metaFile = metaDir.resolve(itemId + ".json");
-                        String metaJson = "{\n" +
-                                "  \"itemId\": \"" + itemId + "\",\n" +
-                                "  \"name\": \"" + (data.name == null ? "" : data.name.replace("\"", "\\\"")) + "\",\n" +
-                                "  \"url\": \"" + (data.url == null ? "" : data.url.replace("\"", "\\\"")) + "\",\n" +
-                                "  \"coords\": { \"x\": " + this.targetBlock.x + ", \"y\": " + this.targetBlock.y + ", \"z\": " + this.targetBlock.z + " },\n" +
-                                "  \"blocks\": { \"x\": " + blocksX + " },\n" +
-                                "  \"createdAt\": \"" + java.time.Instant.now().toString() + "\"\n" +
-                                "}\n";
-                        Files.writeString(metaFile, metaJson);
+                        FileHelper.writeFrameMetadata(itemId, data.name, data.url, this.targetBlock.x, this.targetBlock.y, this.targetBlock.z, blocksX);
                     } catch (IOException ioe) {
                         Frames.LOGGER.atWarning().withCause(ioe).log("Failed to write frame metadata: " + ioe.getMessage());
                     }
@@ -279,8 +275,130 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
             try {
                 if (stateKey.startsWith("Boff_Frame_") || stateKey.startsWith("Boff_Frame")) {
                     boolean replaced = UseFrameInteraction.replaceBlockWithItem(this.targetWorld, this.targetBlock, stateKey);
-                    if (replaced) player.sendMessage(com.hypixel.hytale.server.core.Message.raw("El marco se ha actualizado al item: " + stateKey));
-                    else player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No se pudo reemplazar el bloque con el item: " + stateKey));
+                        if (replaced) {
+                        player.sendMessage(com.hypixel.hytale.server.core.Message.raw("El marco se ha actualizado al item: " + stateKey));
+                        // Follow explicit flow:
+                        // 1) check index for any existing instance at these coords and note where it points
+                        // 2) remove the old registry entry from that meta file
+                        // 3) remove the old coord registry from the global index
+                        // 4) create the new per-item metadata entry + index entry
+                        try {
+                            String itemId = stateKey;
+                            String name = null;
+                            String url = null;
+                            int blocksX = 1;
+
+                            // Try to read existing metadata file for this item to preserve name/url and blocks
+                            try {
+                                Path metaPath = FileHelper.MODS_ROOT.resolve("Frames").resolve(itemId + ".json");
+                                if (Files.exists(metaPath) && Files.isRegularFile(metaPath)) {
+                                    String txt = Files.readString(metaPath);
+                                    org.bson.BsonDocument meta = org.bson.BsonDocument.parse(txt);
+                                    if (meta.containsKey("name")) name = meta.getString("name").getValue();
+                                    if (meta.containsKey("url")) url = meta.getString("url").getValue();
+                                    if (meta.containsKey("frames")) {
+                                        org.bson.BsonArray fa = meta.getArray("frames");
+                                        if (fa.size() > 0) {
+                                            try {
+                                                org.bson.BsonDocument last = fa.get(fa.size() - 1).asDocument();
+                                                if (last.containsKey("blocks")) {
+                                                    org.bson.BsonDocument b = last.getDocument("blocks");
+                                                    if (b.containsKey("x")) blocksX = b.getInt32("x").getValue();
+                                                }
+                                            } catch (Exception ignore) {}
+                                        }
+                                    }
+                                }
+                            } catch (Exception ignoredMeta) {}
+
+                            int tx = this.targetBlock.x;
+                            int ty = this.targetBlock.y;
+                            int tz = this.targetBlock.z;
+
+                            // 1) Find any existing index entry at coords
+                            try {
+                                Path indexFile = FileHelper.MODS_ROOT.resolve("FramesIndex.json");
+                                if (Files.exists(indexFile) && Files.isRegularFile(indexFile)) {
+                                    String idxTxt = Files.readString(indexFile);
+                                    org.bson.BsonDocument idxDoc = org.bson.BsonDocument.parse(idxTxt);
+                                    if (idxDoc.containsKey("items")) {
+                                        org.bson.BsonDocument items = idxDoc.getDocument("items");
+                                        outerloop: for (String fid : items.keySet()) {
+                                            try {
+                                                org.bson.BsonArray arr = items.getArray(fid);
+                                                for (int ai = 0; ai < arr.size(); ai++) {
+                                                    org.bson.BsonDocument inst = arr.get(ai).asDocument();
+                                                    if (!inst.containsKey("coords")) continue;
+                                                    org.bson.BsonDocument c = inst.getDocument("coords");
+                                                    int mx = c.getInt32("x").getValue();
+                                                    int my = c.getInt32("y").getValue();
+                                                    int mz = c.getInt32("z").getValue();
+                                                    if (mx == tx && my == ty && mz == tz) {
+                                                        // Found an existing mapping; attempt to remove it from its meta file
+                                                        String metaFile = inst.containsKey("metaFile") ? inst.getString("metaFile").getValue() : (fid + ".json");
+                                                        try {
+                                                            Path metaPath = FileHelper.MODS_ROOT.resolve("Frames").resolve(metaFile);
+                                                            if (Files.exists(metaPath) && Files.isRegularFile(metaPath)) {
+                                                                try {
+                                                                    String metaTxt = Files.readString(metaPath);
+                                                                    org.bson.BsonDocument metaDoc = org.bson.BsonDocument.parse(metaTxt);
+                                                                    if (metaDoc.containsKey("frames")) {
+                                                                        org.bson.BsonArray framesArr = metaDoc.getArray("frames");
+                                                                        org.bson.BsonArray newFrames = new org.bson.BsonArray();
+                                                                        for (int fi = 0; fi < framesArr.size(); fi++) {
+                                                                            try {
+                                                                                org.bson.BsonDocument fe = framesArr.get(fi).asDocument();
+                                                                                boolean match = false;
+                                                                                if (fe.containsKey("coords")) {
+                                                                                    org.bson.BsonDocument cc = fe.getDocument("coords");
+                                                                                    int px = cc.getInt32("x").getValue();
+                                                                                    int py = cc.getInt32("y").getValue();
+                                                                                    int pz = cc.getInt32("z").getValue();
+                                                                                    if (px == tx && py == ty && pz == tz) match = true;
+                                                                                }
+                                                                                if (!match) newFrames.add(fe);
+                                                                            } catch (Exception e) { newFrames.add(framesArr.get(fi)); }
+                                                                        }
+                                                                        metaDoc.append("frames", newFrames);
+                                                                        org.bson.json.JsonWriterSettings s = org.bson.json.JsonWriterSettings.builder().indent(true).build();
+                                                                        Files.writeString(metaPath, metaDoc.toJson(s));
+                                                                    }
+                                                                } catch (Exception e) {
+                                                                    Frames.LOGGER.atWarning().withCause(e).log("Failed to clean meta file " + metaPath + ": " + e.getMessage());
+                                                                }
+                                                            }
+                                                        } catch (Exception ignore) {}
+
+                                                        // Remove the coord entry from the index as well
+                                                        try {
+                                                            // reuse FileHelper.removeInstancesAtCoords to ensure all index/meta entries are cleaned
+                                                            FileHelper.removeInstancesAtCoords(tx, ty, tz);
+                                                        } catch (Exception e) {
+                                                            Frames.LOGGER.atWarning().withCause(e).log("Failed to remove existing instance at coords: " + e.getMessage());
+                                                        }
+
+                                                        break outerloop;
+                                                    }
+                                                }
+                                            } catch (Exception ignoreItem) {}
+                                        }
+                                    }
+                                }
+                            } catch (Exception e) {
+                                Frames.LOGGER.atWarning().withCause(e).log("Failed to inspect/clean frames index: " + e.getMessage());
+                            }
+
+                            // 4) Create new registry entries for this applied item
+                            try {
+                                FileHelper.writeFrameMetadata(itemId, name, url, tx, ty, tz, blocksX);
+                            } catch (Exception e) {
+                                Frames.LOGGER.atWarning().withCause(e).log("Failed to write frame metadata: " + e.getMessage());
+                            }
+                        } catch (Exception e) {
+                            Frames.LOGGER.atWarning().withCause(e).log("Failed to register applied item instance: " + e.getMessage());
+                        }
+                        }
+                    } else player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No se pudo reemplazar el bloque con el item: " + stateKey));
                 } else {
                     boolean applied = UseFrameInteraction.applyStateToBlock(this.targetWorld, this.targetBlock, stateKey);
                     if (applied) player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Marco actualizado al estado: " + stateKey));
