@@ -37,8 +37,10 @@ public class UpdateFrameUrlCommand extends AbstractPlayerCommand {
 
         sender.sendMessage(Message.raw("Descargando imagen..."));
         try {
-            String stateKey = FileHelper.addImageStateFromUrl(url, 32, 32);
-            sender.sendMessage(Message.raw("Imagen procesada y añadida como estado: " + stateKey));
+            java.awt.image.BufferedImage img = FileHelper.downloadImage(url);
+            // Create a per-image item using default 1x1 blocks (no provided name)
+            String itemId = FileHelper.addImageAsItemFromImage(img, null, 1, 1);
+            sender.sendMessage(Message.raw("Imagen procesada y creada como item: " + itemId));
         } catch (IOException e) {
             sender.sendMessage(Message.raw("Error al descargar o procesar la imagen: " + e.getMessage()));
         }

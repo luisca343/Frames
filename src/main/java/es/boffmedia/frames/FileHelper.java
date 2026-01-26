@@ -272,102 +272,7 @@ public class FileHelper {
         Files.createDirectories(pj.getParent());
         Files.writeString(pj, pretty);
     }
-
-    /**
-     * Downloads an image from the URL, scales it to 32x32, saves it under
-     * mods/BoffmediaFrames/Common/Blocks/Frames/FRAME_<rand>.png and inserts a new
-     * State.Definitions entry into the frame JSON using the same random key.
-     * Returns the generated state key.
-     */
-    /**
-     * Legacy: previous behaviour added states into an existing frame JSON.
-     * Prefer {@link #addImageAsItemFromUrl(String, int, int, String)} which
-     * creates a dedicated blockymodel + item JSON per image.
-     */
-    @Deprecated
-    public static String addImageStateFromUrl(String urlStr, int sizeX, int sizeY) throws IOException {
-        return addImageStateFromUrl(urlStr, sizeX, sizeY, null);
-    }
-
-    /**
-     * Legacy: previous behaviour added states into an existing frame JSON.
-     * Prefer {@link #addImageAsItemFromUrl(String, int, int, String)}.
-     */
-    @Deprecated
-    public static String addImageStateFromUrl(String urlStr, int sizeX, int sizeY, String providedName) throws IOException {
-        // Download
-        BufferedImage image = downloadImage(urlStr);
-
-        // Resize
-        BufferedImage scaled = resizeImage(image, sizeX, sizeY);
-
-        // Determine base name: use provided name (normalized) or fall back to random
-        String baseName = null;
-        if (providedName != null) {
-            String n = providedName.trim();
-            if (!n.isEmpty()) {
-                n = n.replaceAll("\\s+", "_");
-                if (n.length() == 1) n = n.toUpperCase();
-                else n = n.substring(0, 1).toUpperCase() + n.substring(1).toLowerCase();
-                baseName = n;
-            }
-        }
-        if (baseName == null || baseName.isEmpty()) {
-            baseName = generateRandomName(8);
-        }
-
-        // Determine sizeKey from pixel dimensions (32px per frame unit)
-        int w = Math.max(1, sizeX / 32);
-        int h = Math.max(1, sizeY / 32);
-        String sizeKey = w + "x" + h;
-
-        // Save image file inside size-specific subfolder
-        String fileName = baseName + ".png";
-        Path out = saveImageToMods(scaled, fileName, sizeKey);
-        String texturePath = "Blocks/Frames/Images/" + fileName;
-
-        // Insert state into document, ensuring unique key
-        BsonDocument doc = loadOrCreateDocument(sizeKey);
-
-        BsonDocument blockType;
-        if (!doc.containsKey("BlockType")) {
-            blockType = new BsonDocument();
-            doc.append("BlockType", blockType);
-        } else {
-            blockType = doc.getDocument("BlockType");
-        }
-
-        BsonDocument state;
-        if (!blockType.containsKey("State")) {
-            state = new BsonDocument();
-            blockType.append("State", state);
-        } else {
-            state = blockType.getDocument("State");
-        }
-
-        BsonDocument defs;
-        if (!state.containsKey("Definitions")) {
-            defs = new BsonDocument();
-            state.append("Definitions", defs);
-        } else {
-            defs = state.getDocument("Definitions");
-        }
-
-        String uniqueKey = baseName;
-        int attempt = 0;
-        while (defs.containsKey(uniqueKey)) {
-            attempt++;
-            uniqueKey = baseName + "_" + generateRandomName(4);
-            if (attempt > 8) break;
-        }
-
-        addStateToDocument(doc, uniqueKey, texturePath);
-        prettyPrintAndSave(doc, sizeKey);
-
-        Frames.LOGGER.atInfo().log("Added state " + uniqueKey + " with texture " + texturePath + " saved to " + out.toString());
-        return uniqueKey;
-    }
-
+    
     /**
      * Save the provided image without scaling and create a blockymodel + item JSON
      * matching the image's exact pixel dimensions. Returns the generated item id.
@@ -422,75 +327,13 @@ public class FileHelper {
         // Calculate a Y position offset for the model similar to the Z offset calculation.
         float yOffset = ((float) sizeY) / ((float) computedBlocksY * 2.0f);
 
-        String modelJson = "{\n" +
-            "  \"nodes\": [\n" +
-            "    {\n" +
-            "      \"id\": \"1\",\n" +
-            "      \"name\": \"cube\",\n" +
-            "      \"position\": {\"x\": 0, \"y\": " + (int) yOffset + ", \"z\": " + (int) zOffset + "},\n" +
-                "      \"orientation\": {\"x\": 0, \"y\": 0, \"z\": 0, \"w\": 1},\n" +
-                "      \"shape\": {\n" +
-                "        \"type\": \"box\",\n" +
-                "        \"offset\": {\"x\": 0, \"y\": 0, \"z\": 0},\n" +
-                "        \"stretch\": {\"x\": 1, \"y\": 1, \"z\": 1},\n" +
-                "        \"settings\": {\n" +
-                "          \"isPiece\": false,\n" +
-                "          \"size\": {\"x\": " + sizeX + ", \"y\": " + sizeY + ", \"z\": 2},\n" +
-                "          \"isStaticBox\": true\n" +
-                "        },\n" +
-                "        \"textureLayout\": {\n" +
-                "          \"back\": { \"angle\": 0 },\n" +
-                "          \"right\": { \"angle\": 0 },\n" +
-                "          \"front\": { \"angle\": 0 },\n" +
-                "          \"left\": { \"angle\": 0 },\n" +
-                "          \"top\": { \"angle\": 0 }\n" +
-                "        },\n" +
-                "        \"unwrapMode\": \"custom\",\n" +
-                "        \"visible\": true,\n" +
-                "        \"doubleSided\": false,\n" +
-                "        \"shadingMode\": \"flat\"\n" +
-                "      }\n" +
-                "    }\n" +
-                "  ],\n" +
-                "  \"format\": \"prop\",\n" +
-                "  \"lod\": \"auto\"\n" +
-                "}\n";
+        String modelJson = AssetJsonBuilder.buildBlockymodel(baseName, sizeX, sizeY, (int) yOffset, (int) zOffset);
         Files.writeString(modelOut, modelJson);
 
         // Create minimal item JSON (no recipe). Ensure it drops 1x1 on break via a drop hint field.
         Path itemOut = MODS_ROOT.resolve(Paths.get("Server", "Item", "Items", "Furniture", "Frames", "Boff_Frame_" + baseName + ".json"));
         Files.createDirectories(itemOut.getParent());
-        String itemJson = "{\n" +
-                "  \"TranslationProperties\": {\n" +
-                "    \"Name\": \"frames." + baseName + ".name\",\n" +
-                "    \"Description\": \"frames." + baseName + ".description\"\n" +
-                "  },\n" +
-                "  \"Categories\": [\n" +
-                "    \"Blocks.Deco\"\n" +
-                "  ],\n" +
-                "  \"BlockType\": {\n" +
-                "    \"InteractionHint\": \"frames.use_hint\",\n" +
-                "    \"Material\": \"Solid\",\n" +
-                "    \"DrawType\": \"Model\",\n" +
-                "    \"Opacity\": \"Transparent\",\n" +
-                "    \"CustomModel\": \"Blocks/Frames/" + baseName + ".blockymodel\",\n" +
-                "    \"Flags\": { \"IsUsable\": true },\n" +
-                "    \"CustomModelTexture\": [ { \"Texture\": \"" + texturePath + "\" } ],\n" +
-                "    \"HitboxType\": \"Painting\",\n" +
-                "    \"VariantRotation\": \"NESW\",\n" +
-                "    \"BlockParticleSetId\": \"Wood\",\n" +
-                "    \"BlockSoundSetId\": \"Wood\",\n" +
-                "    \"ParticleColor\": \"#684127\",\n" +
-                            "    \"Interactions\": { \"Use\": { \"Interactions\": [ { \"Type\": \"Frames_UseFrameInteraction\" } ] } },\n" +
-                            "    \"CustomModelScale\": " + scaleFactor + "\n" +
-                "  },\n" +
-                "  \"PlayerAnimationsId\": \"Block\",\n" +
-                "  \"IconProperties\": { \"Scale\": 0.68, \"Rotation\": [22.5, 45, 22.5], \"Translation\": [8.5, -19.7] },\n" +
-                "  \"ResourceTypes\": [],\n" +
-                "  \"Tags\": {},\n" +
-                "  \"Icon\": \"Icons/ItemsGenerated/Boff_Frame_1x1.png\",\n" +
-                "  \"DropOnBreak\": \"Boff_Frame_1x1\"\n" +
-                "}\n";
+        String itemJson = AssetJsonBuilder.buildItemJson(baseName, texturePath, scaleFactor);
         Files.writeString(itemOut, itemJson);
 
         String itemId = "Boff_Frame_" + baseName;
@@ -498,11 +341,7 @@ public class FileHelper {
         return itemId;
     }
 
-    // Compatibility overload used by older callers (legacy)
-    @Deprecated
-    public static String addImageStateFromUrl(String urlStr) throws IOException {
-        return addImageStateFromUrl(urlStr, 32, 32, null);
-    }
+    // Legacy compatibility helpers removed.
 
     /**
      * Remove an image state from the frame JSON and delete the texture file on disk if present.
