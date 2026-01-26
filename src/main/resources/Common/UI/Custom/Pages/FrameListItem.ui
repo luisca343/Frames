@@ -1,0 +1,30 @@
+$C = "../Common.ui";
+
+Group {
+    LayoutMode: Left;
+    Anchor: (Height: 64);
+    Background: #1e2836(0.9);
+    Padding: (Left: 16, Right: 16, Top: 10, Bottom: 10);
+
+
+    Label #EntryLabel {
+       Text: "Filename";
+       Anchor: (Height: 20);
+       FlexWeight: 1;
+       Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+    }
+
+    Group { Anchor: (Width: 16); }
+
+    TextButton #ApplyButton {
+        Text: "COPY";
+        Anchor: (Width: 80, Height: 32);
+        Style: $C.@SecondaryTextButtonStyle;
+    }
+    Group { Anchor: (Width: 8); }
+    TextButton #DeleteButton {
+        Text: "DELETE";
+        Anchor: (Width: 80, Height: 32);
+        Style: $C.@CancelTextButtonStyle;
+    }
+}

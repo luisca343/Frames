@@ -1,0 +1,32 @@
+$C = "../Common.ui";
+
+Group {
+    Anchor: (Width: 700, Height: 420);
+    Background: #151624(0.96);
+    LayoutMode: Top;
+    Padding: (Full: 16);
+
+    Label #Title {
+        Text: "Created Frames";
+        Anchor: (Height: 36);
+        Style: (FontSize: 20, TextColor: #ffffff, HorizontalAlignment: Center, RenderBold: true);
+    }
+
+    Group { Anchor: (Height: 8); }
+
+    Group #FramesList {
+        FlexWeight: 1;
+        LayoutMode: TopScrolling;
+        Background: #0f1621(0.7);
+        Padding: (Full: 8);
+        ScrollbarStyle: $C.@DefaultScrollbarStyle;
+    }
+
+    Group { Anchor: (Height: 8); }
+
+    TextButton #CloseButton {
+        Text: "Close";
+        Anchor: (Height: 36, Width: 120);
+        Style: $C.@DefaultTextButtonStyle;
+    }
+}

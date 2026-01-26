@@ -19,9 +19,6 @@ import java.net.JarURLConnection;
 import java.util.Enumeration;
 import java.util.jar.JarFile;
 import java.util.jar.JarEntry;
-import java.io.OutputStream;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,11 +37,11 @@ public class FileHelper {
         }
 
         private static Path textureDirFor(String sizeKey) {
-            return MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames", sizeKey));
+                return MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames", "Images"));
         }
 
         private static Path texturePathFor(String sizeKey, String fileName) {
-            return textureDirFor(sizeKey).resolve(fileName);
+                return textureDirFor(sizeKey).resolve(fileName);
         }
 
         // Default JSON is stored in resources/Default Boff_Frame.json
@@ -274,23 +271,217 @@ public class FileHelper {
     }
 
     /**
-     * Downloads an image from the URL, scales it to 32x32, saves it under
-     * mods/BoffmediaFrames/Common/Blocks/Frames/FRAME_<rand>.png and inserts a new
-     * State.Definitions entry into the frame JSON using the same random key.
-     * Returns the generated state key.
+     * Write a small metadata JSON file describing a created frame item.
+     * Stored under mods/BoffmediaFrames/Frames/<itemId>.json
      */
-    public static String addImageStateFromUrl(String urlStr, int sizeX, int sizeY) throws IOException {
-        return addImageStateFromUrl(urlStr, sizeX, sizeY, null);
+    public static void writeFrameMetadata(String itemId, String name, String url, int x, int y, int z, int blocksX) throws IOException {
+        Path metaDir = MODS_ROOT.resolve("Frames");
+        Files.createDirectories(metaDir);
+        Path metaFile = metaDir.resolve(itemId + ".json");
+        // Before adding a new instance, remove any existing entries at the same coords
+        try {
+            removeInstancesAtCoords(x, y, z);
+        } catch (Exception e) {
+            Frames.LOGGER.atWarning().withCause(e).log("Failed to remove preexisting instances at coords: " + e.getMessage());
+        }
+
+        BsonDocument doc;
+        if (Files.exists(metaFile)) {
+            try {
+                String existing = Files.readString(metaFile);
+                doc = BsonDocument.parse(existing);
+            } catch (Exception e) {
+                doc = new BsonDocument();
+            }
+        } else {
+            doc = new BsonDocument();
+        }
+
+        // Ensure top-level metadata fields
+        if (!doc.containsKey("itemId")) doc.append("itemId", new org.bson.BsonString(itemId == null ? "" : itemId));
+        if (name != null && !name.isEmpty()) doc.append("name", new org.bson.BsonString(name));
+        else if (!doc.containsKey("name")) doc.append("name", new org.bson.BsonString(""));
+        if (url != null && !url.isEmpty()) doc.append("url", new org.bson.BsonString(url));
+        else if (!doc.containsKey("url")) doc.append("url", new org.bson.BsonString(""));
+        if (!doc.containsKey("createdAt")) doc.append("createdAt", new org.bson.BsonString(java.time.Instant.now().toString()));
+
+        // Build the frame instance entry
+        BsonDocument frameEntry = new BsonDocument();
+        BsonDocument coords = new BsonDocument();
+        coords.append("x", new org.bson.BsonInt32(x));
+        coords.append("y", new org.bson.BsonInt32(y));
+        coords.append("z", new org.bson.BsonInt32(z));
+        frameEntry.append("coords", coords);
+
+        BsonDocument blocks = new BsonDocument();
+        blocks.append("x", new org.bson.BsonInt32(blocksX));
+        frameEntry.append("blocks", blocks);
+
+        frameEntry.append("createdAt", new org.bson.BsonString(java.time.Instant.now().toString()));
+
+        // Append into frames array
+        if (!doc.containsKey("frames")) doc.append("frames", new BsonArray());
+        BsonArray arr = doc.getArray("frames");
+        arr.add(frameEntry);
+
+        JsonWriterSettings settings = JsonWriterSettings.builder().indent(true).build();
+        Files.writeString(metaFile, doc.toJson(settings));
+
+        // Also register this instance in the global frames index for quick lookup by coords
+        try {
+            registerFrameInstanceInIndex(itemId, metaFile.getFileName().toString(), x, y, z, blocksX);
+        } catch (Exception e) {
+            Frames.LOGGER.atWarning().withCause(e).log("Failed to update frames index: " + e.getMessage());
+        }
     }
 
-    public static String addImageStateFromUrl(String urlStr, int sizeX, int sizeY, String providedName) throws IOException {
-        // Download
-        BufferedImage image = downloadImage(urlStr);
+    /**
+     * Maintain a global index of frame instances for quick coord->item lookups.
+     * Stored at mods/BoffmediaFrames/FramesIndex.json with structure:
+     * { "items": { "Boff_Frame_X": [ { "metaFile": "Boff_Frame_X.json", "coords": {...}, "blocks": {...}, "createdAt": "..." }, ... ] } }
+     */
+    public static void registerFrameInstanceInIndex(String itemId, String metaFileName, int x, int y, int z, int blocksX) throws IOException {
+        Path indexFile = MODS_ROOT.resolve("FramesIndex.json");
+        BsonDocument indexDoc;
+        if (Files.exists(indexFile)) {
+            try {
+                String existing = Files.readString(indexFile);
+                indexDoc = BsonDocument.parse(existing);
+            } catch (Exception e) {
+                indexDoc = new BsonDocument();
+            }
+        } else {
+            indexDoc = new BsonDocument();
+        }
 
-        // Resize
-        BufferedImage scaled = resizeImage(image, sizeX, sizeY);
+        if (!indexDoc.containsKey("items")) indexDoc.append("items", new BsonDocument());
+        BsonDocument items = indexDoc.getDocument("items");
 
-        // Determine base name: use provided name (normalized) or fall back to random
+        if (!items.containsKey(itemId)) items.append(itemId, new BsonArray());
+        BsonArray arr = items.getArray(itemId);
+
+        BsonDocument entry = new BsonDocument();
+        entry.append("metaFile", new org.bson.BsonString(metaFileName == null ? "" : metaFileName));
+        BsonDocument coords = new BsonDocument();
+        coords.append("x", new org.bson.BsonInt32(x));
+        coords.append("y", new org.bson.BsonInt32(y));
+        coords.append("z", new org.bson.BsonInt32(z));
+        entry.append("coords", coords);
+        BsonDocument blocks = new BsonDocument();
+        blocks.append("x", new org.bson.BsonInt32(blocksX));
+        entry.append("blocks", blocks);
+        entry.append("createdAt", new org.bson.BsonString(java.time.Instant.now().toString()));
+
+        arr.add(entry);
+
+        JsonWriterSettings settings = JsonWriterSettings.builder().indent(true).build();
+        Files.writeString(indexFile, indexDoc.toJson(settings));
+    }
+
+    /**
+     * Remove any indexed instances and per-item metadata frames entries that match the provided coords.
+     * This ensures a single authoritative instance exists at a given coordinate when a new one is applied.
+     */
+    public static void removeInstancesAtCoords(int x, int y, int z) throws IOException {
+        Path indexFile = MODS_ROOT.resolve("FramesIndex.json");
+        if (!Files.exists(indexFile)) return;
+
+        String existing = Files.readString(indexFile);
+        BsonDocument indexDoc = BsonDocument.parse(existing);
+        if (!indexDoc.containsKey("items")) return;
+
+        BsonDocument items = indexDoc.getDocument("items");
+        java.util.List<String> toUpdateMetaFiles = new java.util.ArrayList<>();
+
+        for (String itemId : items.keySet()) {
+            BsonArray arr = items.getArray(itemId);
+            BsonArray newArr = new BsonArray();
+            for (int i = 0; i < arr.size(); i++) {
+                try {
+                    BsonDocument inst = arr.get(i).asDocument();
+                    boolean match = false;
+                    if (inst.containsKey("coords")) {
+                        BsonDocument c = inst.getDocument("coords");
+                        int mx = c.getInt32("x").getValue();
+                        int my = c.getInt32("y").getValue();
+                        int mz = c.getInt32("z").getValue();
+                        if (mx == x && my == y && mz == z) match = true;
+                    }
+                    if (match) {
+                        // mark referenced metaFile for cleanup
+                        if (inst.containsKey("metaFile")) {
+                            try { toUpdateMetaFiles.add(inst.getString("metaFile").getValue()); } catch (Exception ignore) {}
+                        }
+                        // skip adding to newArr -> effectively removed
+                    } else {
+                        newArr.add(inst);
+                    }
+                } catch (Exception e) {
+                    // if parsing fails, keep original entry to avoid data loss
+                    newArr.add(arr.get(i));
+                }
+            }
+
+            if (newArr.size() == 0) {
+                items.remove(itemId);
+            } else {
+                items.append(itemId, newArr);
+            }
+        }
+
+        // Write back updated index
+        JsonWriterSettings settings = JsonWriterSettings.builder().indent(true).build();
+        Files.writeString(indexFile, indexDoc.toJson(settings));
+
+        // For each meta file referenced, remove any frame entries at these coords
+        for (String metaFileName : toUpdateMetaFiles) {
+            try {
+                Path metaPath = MODS_ROOT.resolve("Frames").resolve(metaFileName);
+                if (!Files.exists(metaPath) || !Files.isRegularFile(metaPath)) continue;
+                String metaTxt = Files.readString(metaPath);
+                BsonDocument metaDoc = BsonDocument.parse(metaTxt);
+                if (!metaDoc.containsKey("frames")) continue;
+                BsonArray framesArr = metaDoc.getArray("frames");
+                BsonArray newFrames = new BsonArray();
+                for (int i = 0; i < framesArr.size(); i++) {
+                    try {
+                        BsonDocument fe = framesArr.get(i).asDocument();
+                        boolean match = false;
+                        if (fe.containsKey("coords")) {
+                            BsonDocument c = fe.getDocument("coords");
+                            int mx = c.getInt32("x").getValue();
+                            int my = c.getInt32("y").getValue();
+                            int mz = c.getInt32("z").getValue();
+                            if (mx == x && my == y && mz == z) match = true;
+                        }
+                        if (!match) newFrames.add(fe);
+                    } catch (Exception e) {
+                        newFrames.add(framesArr.get(i));
+                    }
+                }
+                metaDoc.append("frames", newFrames);
+                Files.writeString(metaPath, metaDoc.toJson(settings));
+            } catch (Exception e) {
+                Frames.LOGGER.atWarning().withCause(e).log("Failed cleaning meta file " + metaFileName + ": " + e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Save the provided image without scaling and create a blockymodel + item JSON
+     * matching the image's exact pixel dimensions. Returns the generated item id.
+     */
+    public static String addImageAsItemFromImage(BufferedImage image, String providedName, int blocksX, int blocksY) throws IOException {
+        if (image == null) throw new IOException("Provided image is null");
+
+        int imgPixelsX = image.getWidth();
+        int imgPixelsY = image.getHeight();
+
+        // Model size in pixels = image pixel dimensions (no cropping)
+        int sizeX = Math.max(1, imgPixelsX);
+        int sizeY = Math.max(1, imgPixelsY);
+
+        // Normalize base name same as previous logic
         String baseName = null;
         if (providedName != null) {
             String n = providedName.trim();
@@ -301,66 +492,50 @@ public class FileHelper {
                 baseName = n;
             }
         }
-        if (baseName == null || baseName.isEmpty()) {
-            baseName = generateRandomName(8);
-        }
+        if (baseName == null || baseName.isEmpty()) baseName = generateRandomName(8);
 
-        // Determine sizeKey from pixel dimensions (32px per frame unit)
+        // sizeKey based on 32px steps (folder grouping)
         int w = Math.max(1, sizeX / 32);
         int h = Math.max(1, sizeY / 32);
         String sizeKey = w + "x" + h;
 
-        // Save image file inside size-specific subfolder
         String fileName = baseName + ".png";
-        Path out = saveImageToMods(scaled, fileName, sizeKey);
-        String texturePath = "Blocks/Frames/" + sizeKey + "/" + fileName;
+        // Save image as-is
+        Path out = saveImageToMods(image, fileName, sizeKey);
+        String texturePath = "Blocks/Frames/Images/" + fileName;
 
-        // Insert state into document, ensuring unique key
-        BsonDocument doc = loadOrCreateDocument(sizeKey);
+        // Create blockymodel matching exact pixel size
+        Path modelOut = MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames", baseName + ".blockymodel"));
+        Files.createDirectories(modelOut.getParent());
+        // We adjust the position to be exactly in the wall
+        float zOffset = ((float) sizeX) / (-blocksX * 2);
 
-        BsonDocument blockType;
-        if (!doc.containsKey("BlockType")) {
-            blockType = new BsonDocument();
-            doc.append("BlockType", blockType);
-        } else {
-            blockType = doc.getDocument("BlockType");
-        }
+        // Compute render scale so the model (which is sized to image pixels) is displayed
+        // at the requested block dimensions. Use horizontal size to compute scale
+        // and preserve aspect ratio by applying the same scale on both axes.
+        float scaleFactor = ((float) Math.max(1, blocksX) * 32.0f) / (float) imgPixelsX;
 
-        BsonDocument state;
-        if (!blockType.containsKey("State")) {
-            state = new BsonDocument();
-            blockType.append("State", state);
-        } else {
-            state = blockType.getDocument("State");
-        }
+        // Derive the vertical block count from the horizontal blocks and image aspect ratio
+        int computedBlocksY = Math.max(1, Math.round((float) blocksX * (float) imgPixelsY / (float) imgPixelsX));
 
-        BsonDocument defs;
-        if (!state.containsKey("Definitions")) {
-            defs = new BsonDocument();
-            state.append("Definitions", defs);
-        } else {
-            defs = state.getDocument("Definitions");
-        }
+        // Calculate a Y position offset for the model similar to the Z offset calculation.
+        float yOffset = ((float) sizeY) / ((float) computedBlocksY * 2.0f);
 
-        String uniqueKey = baseName;
-        int attempt = 0;
-        while (defs.containsKey(uniqueKey)) {
-            attempt++;
-            uniqueKey = baseName + "_" + generateRandomName(4);
-            if (attempt > 8) break;
-        }
+        String modelJson = AssetJsonBuilder.buildBlockymodel(baseName, sizeX, sizeY, (int) yOffset, (int) zOffset);
+        Files.writeString(modelOut, modelJson);
 
-        addStateToDocument(doc, uniqueKey, texturePath);
-        prettyPrintAndSave(doc, sizeKey);
+        // Create minimal item JSON (no recipe). Ensure it drops 1x1 on break via a drop hint field.
+        Path itemOut = MODS_ROOT.resolve(Paths.get("Server", "Item", "Items", "Furniture", "Frames", "Boff_Frame_" + baseName + ".json"));
+        Files.createDirectories(itemOut.getParent());
+        String itemJson = AssetJsonBuilder.buildItemJson(baseName, texturePath, scaleFactor);
+        Files.writeString(itemOut, itemJson);
 
-        Frames.LOGGER.atInfo().log("Added state " + uniqueKey + " with texture " + texturePath + " saved to " + out.toString());
-        return uniqueKey;
+        String itemId = "Boff_Frame_" + baseName;
+        Frames.LOGGER.atInfo().log("Created dynamic item " + itemId + " model=" + modelOut + " image=" + out + " json=" + itemOut);
+        return itemId;
     }
 
-    // Compatibility overload used by older callers
-    public static String addImageStateFromUrl(String urlStr) throws IOException {
-        return addImageStateFromUrl(urlStr, 32, 32, null);
-    }
+    // Legacy compatibility helpers removed.
 
     /**
      * Remove an image state from the frame JSON and delete the texture file on disk if present.

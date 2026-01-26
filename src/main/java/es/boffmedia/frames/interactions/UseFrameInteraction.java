@@ -83,6 +83,36 @@ public class UseFrameInteraction extends OpenCustomUIInteraction {
         }
     }
 
+    /**
+     * Replace the block at targetBlock with the block asset identified by itemId.
+     * itemId should be the asset key such as "Boff_Frame_<name>".
+     */
+    public static boolean replaceBlockWithItem(@Nonnull World world, @Nonnull BlockPosition targetBlock, @Nonnull String itemId) {
+        try {
+            long chunkIndex = ChunkUtil.indexChunkFromBlock(targetBlock.x, targetBlock.z);
+            WorldChunk chunk = world.getChunkIfInMemory(chunkIndex);
+            if (chunk == null) {
+                Frames.LOGGER.atWarning().log("Chunk not in memory for block: " + targetBlock);
+                return false;
+            }
+
+            int newBlockId = BlockType.getAssetMap().getIndex(itemId);
+            BlockType newBlockType = (BlockType) BlockType.getAssetMap().getAsset(newBlockId);
+            if (newBlockType == null) {
+                Frames.LOGGER.atWarning().log("Failed to resolve BlockType for itemId: " + itemId + " (index=" + newBlockId + ")");
+                return false;
+            }
+
+            int rotation = chunk.getRotationIndex(targetBlock.x, targetBlock.y, targetBlock.z);
+            chunk.setBlock(targetBlock.x, targetBlock.y, targetBlock.z, newBlockId, newBlockType, rotation, 0, 256);
+            Frames.LOGGER.atInfo().log("Replaced block at " + targetBlock + " with " + itemId);
+            return true;
+        } catch (Exception e) {
+            Frames.LOGGER.atSevere().withCause(e).log("Failed to replace block: " + e.getMessage());
+            return false;
+        }
+    }
+
 
     static {
         Frames.LOGGER.atInfo().log("Registering UseFrameInteraction codec");
