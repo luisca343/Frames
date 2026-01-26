@@ -197,28 +197,33 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                     Frames.LOGGER.atWarning().withCause(e).log("Failed to determine block size, defaulting to 32x32");
                 }
 
-                String stateKey = FileHelper.addImageStateFromUrl(url, sizeX, sizeY, data.name);
-                // Lo ideal sería poder aplicar justo después de que termine de actualizar, pero no veo la forma
-                // Así que por ahora cierro y que se actualice manualmente
-                this.close();
-                // Delay applying the state by 10 seconds to allow any asset/IO sync.
-                /*
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(5_000);
-                        Frames.LOGGER.atInfo().log("Attempting to apply state '" + stateKey + "' after delay");
-                        boolean applied = UseFrameInteraction.applyStateToBlock(this.targetWorld, this.targetBlock, stateKey);
-                        if (applied) {
-                            //player.sendMessage(com.hypixel.hytale.server.core.Message.raw("El marco se ha actualizado al nuevo estado: " + stateKey));
-                        } else {
-                            player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No se pudo aplicar el nuevo estado al bloque. Asegúrate de que el chunk está cargado y que el asset se ha recargado."));
+                // Download image (no scaling) and create a dedicated item + blockymodel for it
+                try {
+                    java.awt.image.BufferedImage img = FileHelper.downloadImage(url);
+                    String itemId = FileHelper.addImageAsItemFromImage(img, data.name);
+
+                    // Close UI and delay applying the new block so assets have time to sync
+                    this.close();
+
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(10_000);
+                            Frames.LOGGER.atInfo().log("Attempting to replace block with item '" + itemId + "' after delay");
+                            boolean replaced = UseFrameInteraction.replaceBlockWithItem(this.targetWorld, this.targetBlock, itemId);
+                            if (replaced) {
+                                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("El marco se ha actualizado al nuevo item: " + itemId));
+                            } else {
+                                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No se pudo reemplazar el bloque. Asegúrate de que el chunk está cargado y que los assets se han recargado."));
+                            }
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            Frames.LOGGER.atWarning().withCause(ie).log("Delayed replacement interrupted");
                         }
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        Frames.LOGGER.atWarning().withCause(ie).log("Delayed state application interrupted");
-                    }
-                }).start();*/
-            } catch (IOException e) {
+                    }).start();
+                } catch (IOException ioe) {
+                    player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error al descargar o guardar la imagen: " + ioe.getMessage()));
+                }
+            } catch (Exception e) {
                 player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error al descargar o procesar la imagen: " + e.getMessage()));
             }
         }
