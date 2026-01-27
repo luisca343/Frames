@@ -1,49 +1,57 @@
 
-# Boffmedia Frames — Adding Internet Images to Hytale
+# Boffmedia Frames — Dynamic Full-Resolution Picture Frames for Hytale
 
 ![Boffmedia Frames image](https://i.imgur.com/kNV4943.png)
 
 ## Overview
 
-This project enables downloading images from arbitrary URLs, converting them into Hytale-compatible textures, injecting them as new block states in the frame asset JSON, and applying those states to in-world frame blocks via UI or commands.
+Boffmedia Frames lets players display images from the internet on in-world frames. It now supports full-resolution image rendering (saved at native pixel dimensions and scaled to block sizes), per-instance metadata, and a global index for fast coordinate lookups.
 
+Key features:
+- Full-resolution image rendering and pixel-preserving scaling to requested block sizes.
+- Automatic asset generation: textures, block models, and server item JSON are created when importing an image.
+- Per-item metadata files: every generated item has `mods/BoffmediaFrames/Frames/<itemId>.json` containing a `frames` array of placed instances.
+- Global index: `mods/BoffmediaFrames/FramesIndex.json` maps item ids to instances for quick coord → item resolution and UI prefill.
+- Admin tools: `/listframes` shows generated frames with a COPY button (copies item id to chat) and delete functionality that removes associated assets and metadata.
+- In-UI controls: simplified frame UI with Upload, Apply (by item id or state key), and Remove (drops a normal 1x1 frame and clears metadata for that coordinate).
 
-## Core flow (technical)
+## How it works (summary)
 
-1. Request: the UI triggers an image import (URL or upload).
-2. Download: the plugin downloads the image bytes from the provided URL.
-3. Decode & Resize: the image is decoded and resized (nearest-neighbor) to the frame texture size (32 px per frame unit; scaled by frame dimensions).
-4. Save texture: the processed PNG is written into the mod textures directory (under `mods/BoffmediaFrames/` or project `resources` depending on runtime).
-5. JSON injection: a new `State.Definitions` entry is inserted into the size-specific frame JSON (the mod's asset manifest) and the JSON is pretty-printed and saved.
-6. World refresh: after saving the file, the game automatically reloads the assets, effectively making the new texture/state available.
+1. Player interacts with a frame and opens the Picture Frame UI.
+2. Upload a URL or paste an existing `Boff_Frame_<Name>` id and use Apply.
+3. For uploads: the mod downloads the image, creates a PNG texture, a matching blockymodel and an item JSON, writes per-item metadata and updates the global index.
+4. The mod then replaces the block (after a short delay) so the new item/state appears in-world.
+5. When applying an existing generated item, the mod removes any prior instance registered at the same coordinates (both from the index and the referenced per-item metadata) and writes the new instance — ensuring a single authoritative mapping per coordinate.
 
-## Datapack generation
+## File layout (runtime)
 
-- The plugin programmatically constructs a Hytale datapack (asset folder + manifest) during the image-import flow. This datapack contains the new texture files and updated asset JSON files (`State.Definitions`) for the correct frame sizes, and is written into the `mods/BoffmediaFrames/` (or the server's mod datapack location) so the game can reload and make the new states available without manual editing. 
-- This is both the reason the mod works, and the reason for the players to be required to reboot the server after installing the mod, as the first load creates the initial datapack structure, and unfortunately Hytale does not pick it up until a restart. (Workaround ideas welcome!)
+- `mods/BoffmediaFrames/Frames/<itemId>.json` — per-generated-item metadata (contains `frames` array of instances).
+- `mods/BoffmediaFrames/FramesIndex.json` — global index for coord → item lookups.
+- `mods/BoffmediaFrames/Common/Blocks/Frames/Images/` — saved PNG textures.
+- `mods/BoffmediaFrames/Common/Blocks/Frames/*.blockymodel` — generated models.
+- `mods/BoffmediaFrames/Server/Item/Items/Furniture/Frames/Boff_Frame_<Name>.json` — generated server item JSON.
 
-## Image processing details
+## Admin & UI notes
 
-- Download: image fetching handles standard HTTP(S) and reads raw image bytes into a BufferedImage (or equivalent).
-- Resize: nearest-neighbor scaling is used to avoid color blending artifacts and preserve pixel art fidelity.
-- Format: saved as PNG with an appropriate filename and Hytale asset-friendly naming (capitalized first letter when required).
+- `/listframes` opens an admin UI listing generated items. Use COPY to paste the `Boff_Frame_<Name>` id into chat for easy reuse.
+- Delete removes the item's metadata, generated item JSON, blockymodel, texture and removes any state definitions referencing the id.
+- The Picture Frame UI now includes a Remove button which replaces the frame with a normal `Boff_Frame_1x1` and clears metadata/index entries for that coordinate.
 
-## JSON & asset injection
+## Development notes
 
-- Assets live in size-specific frame JSON files (e.g., `Boff_Frame_1x1.json`, `Boff_Frame_2x2.json`).
-- The plugin generates a unique state key and corresponding `Texture` entry, then inserts a new state under `State.Definitions` for the correct size.
-- The JSON is written back using a pretty-print routine so it remains human-readable and diff-friendly.
+- The plugin writes asset files into `mods/BoffmediaFrames/` so the server/client will load them; a server restart/save may be required on first use for assets to become available.
+- Metadata is stored as pretty-printed JSON using `org.bson.BsonDocument` helpers to keep files human-readable.
+- The codebase includes helpers in `FileHelper.java` for image download, model/item generation, metadata writes, and index maintenance.
 
-## Applying frames in-world
+## Troubleshooting
 
-- The in-world interaction code validates that the chunk is loaded and then sets the block's type/state and rotation accordingly.
-- If chunk saving or block update fails, the plugin logs an error and returns a user-friendly message in the UI.
+- If a generated asset does not appear immediately, ensure the world chunk is loaded and restart or save the server to force asset reload.
+- If coordinates are duplicated, the Apply flow removes prior instances at the same coords before registering a new one.
 
-## Naming conventions & sizing
+## Contributing
 
-- Texture filenames are generated to be unique and conform to asset naming expectations.
-- Frame size keys are derived from the block or explicitly chosen in the UI (e.g., `Boff_Frame_1x1`, `Boff_Frame_2x2`). Ensure the state is added to the correct size file.
+See the source repository for implementation details and feel free to open issues or PRs for improvements (e.g., client-side caching, index deduping, or UX refinements).
 
 ---
 
-This README provides a technical overview of the Boffmedia Frames mod for Hytale, detailing its functionality, image processing, JSON injection, and usage instructions. For further development or contributions, please refer to the source code and associated documentation.
+For quick reference, see `src/main/java/es/boffmedia/frames/FileHelper.java` for metadata/index behavior and `src/main/java/es/boffmedia/frames/ui/ImageDownloadPage.java` for the in-game UI flow.
