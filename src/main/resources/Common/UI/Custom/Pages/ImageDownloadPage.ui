@@ -97,10 +97,12 @@ Group {
             PlaceholderText: "Paste item id or state key...";
         }
 
+        Group { Anchor: (Width: 12); }
+
         TextButton #ApplyButton {
             Text: "Apply";
-            Anchor: (Width: 120, Height: 36);
-            Style: $C.@DefaultTextButtonStyle;
+            Anchor: (Width: 120, Height: 44);
+            Style: $C.@SecondaryTextButtonStyle;
         }
     }
 
@@ -112,7 +114,7 @@ Group {
         Padding: (Left: 0);
 
         TextButton #UploadButton {
-            Text: "Upload";
+            Text: "Download / Update";
             FlexWeight: 1;
             Anchor: (Height: 36);
             Style: $C.@DefaultTextButtonStyle;
