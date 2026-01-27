@@ -1,7 +1,7 @@
 
 # Boffmedia Frames — Dynamic Full-Resolution Picture Frames for Hytale
 
-![Boffmedia Frames image](https://i.imgur.com/kNV4943.png)
+![Boffmedia Frames image](https://i.imgur.com/biPaJ1x.jpeg)
 
 ## Overview
 
