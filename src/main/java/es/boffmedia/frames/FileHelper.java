@@ -30,7 +30,7 @@ public class FileHelper {
         public static final Path MODS_ROOT = Paths.get("mods", "BoffmediaFrames");
 
         // Define available frame sizes (width x height in frames)
-        public static final String[] FRAME_SIZES = new String[]{"1x1", "1x2", "1x3", "2x1", "2x2", "2x3", "3x1", "3x2", "3x3"};
+        public static final String[] FRAME_SIZES = new String[]{"1x1"};
 
         private static Path frameJsonPathFor(String sizeKey) {
             return MODS_ROOT.resolve(Paths.get("Server", "Item", "Items", "Furniture", "Frames", "Boff_Frame_" + sizeKey + ".json"));
@@ -62,6 +62,7 @@ public class FileHelper {
         Frames.LOGGER.atInfo().log("Mods folder exists: " + Files.exists(MODS_ROOT));
 
         try {
+            ensureManifestExists();
             // Copy embedded resource folders into the mods folder first
             copyResourceDirectory("/Common", MODS_ROOT.resolve("Common"));
             copyResourceDirectory("/Server", MODS_ROOT.resolve("Server"));
@@ -73,7 +74,6 @@ public class FileHelper {
                 Frames.LOGGER.atInfo().log("Document loaded for " + sk + ": " + (doc != null));
             }
             // Ensure top-level manifest exists in mods root (copy from resource manifest_generated.json)
-            ensureManifestExists();
         } catch (Exception e) {
             Frames.LOGGER.atSevere().withCause(e).log("Failed to ensure or load frame json: " + e.getMessage());
         }
