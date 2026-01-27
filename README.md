@@ -50,7 +50,7 @@ Key features:
 
 ## Contributing
 
-See the source repository for implementation details and feel free to open issues or PRs for improvements (e.g., client-side caching, index deduping, or UX refinements).
+See the source repository for implementation details and feel free to open issues or PRs for improvements.
 
 ---
 
