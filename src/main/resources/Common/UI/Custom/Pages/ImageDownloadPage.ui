@@ -1,10 +1,10 @@
 $C = "../Common.ui";
 
 Group {
-    Anchor: (Width: 650, Height: 350);
+    Anchor: (Width: 650, Height: 420);
     Background: #1a1a2e(0.96);
     LayoutMode: Top;
-    Padding: (Full: 16);
+    Padding: (Full: 20);
 
     Label #Title {
         Text: "Picture Frame";
@@ -12,11 +12,11 @@ Group {
         Style: (FontSize: 20, TextColor: #ffffff, HorizontalAlignment: Center, RenderBold: true);
     }
 
-    Group { Anchor: (Height: 8); }
+    Group { Anchor: (Height: 12); }
 
     Group {
         LayoutMode: Left;
-        Anchor: (Height: 44);
+        Anchor: (Height: 52);
 
         Label {
             Text: "Name:";
@@ -26,18 +26,18 @@ Group {
 
         $C.@TextField #NameInput {
             FlexWeight: 1;
-            Anchor: (Height: 40);
+            Anchor: (Height: 44);
             Padding: (Horizontal: 12);
             Background: #0f1621;
             PlaceholderText: "Enter image name...";
         }
     }
 
-    Group { Anchor: (Height: 8); }
+    Group { Anchor: (Height: 12); }
 
     Group {
         LayoutMode: Left;
-        Anchor: (Height: 44);
+        Anchor: (Height: 52);
 
         Label {
             Text: "URL:";
@@ -47,18 +47,18 @@ Group {
 
         $C.@TextField #UrlInput {
             FlexWeight: 1;
-            Anchor: (Height: 40);
+            Anchor: (Height: 44);
             Padding: (Horizontal: 12);
             Background: #0f1621;
             PlaceholderText: "https://example.com/image.png";
         }
     }
 
-    Group { Anchor: (Height: 8); }
+    Group { Anchor: (Height: 12); }
 
     Group {
         LayoutMode: Left;
-        Anchor: (Height: 44);
+        Anchor: (Height: 52);
 
         Label {
             Text: "Size X (blocks):";
@@ -68,7 +68,7 @@ Group {
 
         $C.@TextField #SizeXInput {
             FlexWeight: 1;
-            Anchor: (Height: 40);
+            Anchor: (Height: 44);
             Padding: (Horizontal: 12);
             Background: #0f1621;
             PlaceholderText: "1";
@@ -77,11 +77,11 @@ Group {
         /* Size Y removed — aspect ratio preserved automatically */
     }
 
-    Group { Anchor: (Height: 8); }
+    Group { Anchor: (Height: 12); }
 
     Group {
         LayoutMode: Left;
-        Anchor: (Height: 44);
+        Anchor: (Height: 52);
 
         Label {
             Text: "Item / State Key:";
@@ -91,7 +91,7 @@ Group {
 
         $C.@TextField #StateKeyInput {
             FlexWeight: 1;
-            Anchor: (Height: 40);
+            Anchor: (Height: 44);
             Padding: (Horizontal: 12);
             Background: #0f1621;
             PlaceholderText: "Paste item id or state key...";
@@ -104,12 +104,27 @@ Group {
         }
     }
 
-    Group { Anchor: (Height: 8); }
+    Group { Anchor: (Height: 14); }
 
-    TextButton #UploadButton {
-        Text: "Upload";
-        Anchor: (Height: 36);
-        Style: $C.@DefaultTextButtonStyle;
+    Group {
+        LayoutMode: Left;
+        Anchor: (Height: 48);
+        Padding: (Left: 0);
+
+        TextButton #UploadButton {
+            Text: "Upload";
+            FlexWeight: 1;
+            Anchor: (Height: 36);
+            Style: $C.@DefaultTextButtonStyle;
+        }
+
+        Group { Anchor: (Width: 12); }
+
+        TextButton #RemoveButton {
+            Text: "Remove";
+            Anchor: (Width: 160, Height: 36);
+            Style: $C.@CancelTextButtonStyle;
+        }
     }
 
     /* Hidden sentinel DeleteButton so event bindings for Delete resolve at load time */

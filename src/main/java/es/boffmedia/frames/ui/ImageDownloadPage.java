@@ -87,6 +87,12 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                 .append("@StateKey", "#StateKeyInput.Value"),
                 false);
 
+        // Bind Remove button: replace with 1x1 frame and remove metadata for this coord
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#RemoveButton",
+            new EventData()
+                .append("Action", "RemoveReplace1x1"),
+                false);
+
         // Prefill inputs from the global frames index by coords for quick lookup
         try {
             Path indexFile = FileHelper.MODS_ROOT.resolve("FramesIndex.json");
@@ -228,6 +234,24 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
             } catch (Exception e) {
                 player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error al descargar o procesar la imagen: " + e.getMessage()));
             }
+        }
+        else if ("RemoveReplace1x1".equals(data.action)) {
+            try {
+                boolean replaced = UseFrameInteraction.replaceBlockWithItem(this.targetWorld, this.targetBlock, "Boff_Frame_1x1");
+                if (replaced) {
+                    try {
+                        FileHelper.removeInstancesAtCoords(this.targetBlock.x, this.targetBlock.y, this.targetBlock.z);
+                    } catch (Exception e) {
+                        Frames.LOGGER.atWarning().withCause(e).log("Failed to remove frame instances at coords: " + e.getMessage());
+                    }
+                    player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Marco eliminado y reemplazado por Boff_Frame_1x1."));
+                } else {
+                    player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No se pudo reemplazar el marco con Boff_Frame_1x1."));
+                }
+            } catch (Exception e) {
+                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error al eliminar el marco: " + e.getMessage()));
+            }
+            this.close();
         }
         else if ("Delete".equals(data.action)) {
             String stateKey = data.stateKey;
