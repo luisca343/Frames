@@ -29,13 +29,13 @@ public class ListFramesCommand extends AbstractPlayerCommand {
         Player sender = commandContext.senderAs(Player.class);
 
         if (!PermissionsUtil.canDeleteFrames(sender)) {
-            sender.sendMessage(Message.raw("No tienes permiso para ejecutar este comando."));
+            sender.sendMessage(Message.raw("You do not have permission to run this command."));
             return;
         }
 
         Path metaDir = FileHelper.MODS_ROOT.resolve("Frames");
         if (!Files.exists(metaDir) || !Files.isDirectory(metaDir)) {
-            sender.sendMessage(Message.raw("No se encontraron archivos de metadatos."));
+            sender.sendMessage(Message.raw("No metadata files found."));
             return;
         }
 
@@ -64,7 +64,7 @@ public class ListFramesCommand extends AbstractPlayerCommand {
             es.boffmedia.frames.ui.ListFramesPage page = new es.boffmedia.frames.ui.ListFramesPage(playerRef, arr);
             sender.getPageManager().openCustomPage(sender.getReference(), sender.getReference().getStore(), page);
         } catch (Exception e) {
-            sender.sendMessage(Message.raw("Error listando metadatos: " + e.getMessage()));
+            sender.sendMessage(Message.raw("Error listing metadata: " + e.getMessage()));
         }
     }
 }

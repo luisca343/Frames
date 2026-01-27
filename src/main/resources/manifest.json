@@ -1,7 +1,7 @@
 {
     "Group": "Boffmedia",
     "Name": "Frames",
-    "Version": "2.0.0",
+    "Version": "2.1.0",
     "Description": "Adds Picture Frames to the game, allowing players to display images from the Internet in their bases.",
     "Authors": [
         {

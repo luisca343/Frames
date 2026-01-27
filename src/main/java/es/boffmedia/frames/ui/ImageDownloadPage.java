@@ -157,12 +157,12 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
 
         if ("Upload".equals(data.action)) {
             String url = data.url;
-            if (url == null || url.trim().isEmpty()) {
-                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Por favor, introduce una URL válida en el campo."));
+                if (url == null || url.trim().isEmpty()) {
+                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Please enter a valid URL in the field."));
                 return;
             }
 
-            player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Descargando imagen..."));
+                    player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Downloading image..."));
             try {
                 int sizeX = 32;
                 int sizeY = 32;
@@ -219,9 +219,9 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                             Frames.LOGGER.atInfo().log("Attempting to replace block with item '" + itemId + "' after delay");
                             boolean replaced = UseFrameInteraction.replaceBlockWithItem(this.targetWorld, this.targetBlock, itemId);
                             if (replaced) {
-                                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("El marco se ha actualizado al nuevo item: " + itemId));
+                                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("The frame has been updated to the new item: " + itemId));
                             } else {
-                                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No se pudo reemplazar el bloque. Asegúrate de que el chunk está cargado y que los assets se han recargado."));
+                                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Could not replace the block. Ensure the chunk is loaded and assets have been reloaded."));
                             }
                         } catch (InterruptedException ie) {
                             Thread.currentThread().interrupt();
@@ -229,10 +229,10 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                         }
                     }).start();
                 } catch (IOException ioe) {
-                    player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error al descargar o guardar la imagen: " + ioe.getMessage()));
+                    player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error downloading or saving the image: " + ioe.getMessage()));
                 }
             } catch (Exception e) {
-                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error al descargar o procesar la imagen: " + e.getMessage()));
+                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error downloading or processing the image: " + e.getMessage()));
             }
         }
         else if ("RemoveReplace1x1".equals(data.action)) {
@@ -244,12 +244,12 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                     } catch (Exception e) {
                         Frames.LOGGER.atWarning().withCause(e).log("Failed to remove frame instances at coords: " + e.getMessage());
                     }
-                    player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Marco eliminado y reemplazado por Boff_Frame_1x1."));
+                    player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Frame removed and replaced with Boff_Frame_1x1."));
                 } else {
-                    player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No se pudo reemplazar el marco con Boff_Frame_1x1."));
+                    player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Could not replace the frame with Boff_Frame_1x1."));
                 }
             } catch (Exception e) {
-                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error al eliminar el marco: " + e.getMessage()));
+                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error removing the frame: " + e.getMessage()));
             }
             this.close();
         }
@@ -279,14 +279,14 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
             try {
                 boolean removed = FileHelper.removeImageState(sizeKey, stateKey);
                 if (removed) {
-                    player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Imagen eliminada y estado removido: " + stateKey));
+                    player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Image removed and state removed: " + stateKey));
                     // Refresh UI: close current page and reopen a fresh one so the list updates
                     this.close();
                     ImageDownloadPage page = new ImageDownloadPage(player.getPlayerRef(), this.targetWorld, this.targetBlock);
                     player.getPageManager().openCustomPage(player.getReference(), player.getReference().getStore(), page);
-                } else player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No se encontró el estado o no se pudo eliminar: " + stateKey));
+                } else player.sendMessage(com.hypixel.hytale.server.core.Message.raw("State not found or could not be removed: " + stateKey));
             } catch (IOException e) {
-                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error al eliminar la imagen: " + e.getMessage()));
+                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error removing image: " + e.getMessage()));
             }
         }
         else if ("Apply".equals(data.action)) {
@@ -300,7 +300,7 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                 if (stateKey.startsWith("Boff_Frame_") || stateKey.startsWith("Boff_Frame")) {
                     boolean replaced = UseFrameInteraction.replaceBlockWithItem(this.targetWorld, this.targetBlock, stateKey);
                     if (replaced) {
-                        player.sendMessage(com.hypixel.hytale.server.core.Message.raw("El marco se ha actualizado al item: " + stateKey));
+                        player.sendMessage(com.hypixel.hytale.server.core.Message.raw("The frame has been updated to the item: " + stateKey));
 
                         // Preserve name/url/blocks if present in the item's metadata
                         String itemId = stateKey;
@@ -346,15 +346,15 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                             Frames.LOGGER.atWarning().withCause(e).log("Failed to write frame metadata: " + e.getMessage());
                         }
                     } else {
-                        player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No se pudo reemplazar el bloque con el item: " + stateKey));
+                        player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Could not replace the block with the item: " + stateKey));
                     }
                 } else {
                     boolean applied = UseFrameInteraction.applyStateToBlock(this.targetWorld, this.targetBlock, stateKey);
-                    if (applied) player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Marco actualizado al estado: " + stateKey));
-                    else player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No se pudo aplicar el estado: " + stateKey));
+                    if (applied) player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Frame updated to state: " + stateKey));
+                    else player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Could not apply the state: " + stateKey));
                 }
             } catch (Exception e) {
-                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error al aplicar: " + e.getMessage()));
+                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error applying: " + e.getMessage()));
             }
         }
     }
