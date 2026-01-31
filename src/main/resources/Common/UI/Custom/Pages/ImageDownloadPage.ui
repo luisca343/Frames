@@ -99,6 +99,14 @@ $C.@PageOverlay {
 
                 Group { Anchor: (Width: 12); }
 
+                TextButton #ChooseButton {
+                    Text: "Choose";
+                    Anchor: (Width: 120, Height: 44);
+                    Style: $C.@SecondaryTextButtonStyle;
+                }
+
+                Group { Anchor: (Width: 8); }
+
                 TextButton #ApplyButton {
                     Text: "Apply";
                     Anchor: (Width: 120, Height: 44);
