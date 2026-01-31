@@ -59,12 +59,22 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
     private final PlayerRef playerRef;
     private final World targetWorld;
     private final BlockPosition targetBlock;
+    private String initialStateKey;
 
     public ImageDownloadPage(@Nonnull PlayerRef playerRef, @Nonnull World world, @Nonnull BlockPosition targetBlock) {
+        this(playerRef, world, targetBlock, null);
+    }
+
+    public ImageDownloadPage(@Nonnull PlayerRef playerRef, @Nonnull World world, @Nonnull BlockPosition targetBlock, String initialStateKey) {
         super(playerRef, CustomPageLifetime.CanDismiss, ImageDownloadData.CODEC);
         this.playerRef = playerRef;
         this.targetWorld = world;
         this.targetBlock = targetBlock;
+        this.initialStateKey = initialStateKey;
+    }
+
+    public void setSelectedStateKey(String key) {
+        this.initialStateKey = key;
     }
 
     @Override
@@ -85,6 +95,12 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
             new EventData()
                 .append("Action", "Apply")
                 .append("@StateKey", "#StateKeyInput.Value"),
+                false);
+
+        // Bind Choose button: open a page to pick an existing image
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#ChooseButton",
+            new EventData()
+                .append("Action", "Choose"),
                 false);
 
         // Bind Remove button: replace with 1x1 frame and remove metadata for this coord
@@ -147,6 +163,13 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                 }
             }
         } catch (Exception ignored) {}
+
+        // If we were opened with a preselected state key, set the input value
+        try {
+            if (this.initialStateKey != null && !this.initialStateKey.isEmpty()) {
+                uiCommandBuilder.set("#StateKeyInput.Value", this.initialStateKey);
+            }
+        } catch (Exception ignored) {}
     }
 
     @Override
@@ -155,14 +178,56 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
 
         if (data == null || data.action == null) return;
 
+        if ("Choose".equals(data.action)) {
+            // Build entries list from metadata files and open ListUserImagesPage
+            try {
+                Path metaDir = FileHelper.MODS_ROOT.resolve("Frames");
+                if (!Files.exists(metaDir) || !Files.isDirectory(metaDir)) {
+                    player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No metadata files found."));
+                    return;
+                }
+
+                java.util.List<String> entries = new java.util.ArrayList<>();
+                try (java.util.stream.Stream<Path> stream = Files.list(metaDir)) {
+                    stream.filter(p -> Files.isRegularFile(p) && p.getFileName().toString().endsWith(".json"))
+                          .forEach(p -> {
+                              try {
+                                  String txt = Files.readString(p);
+                                  org.bson.BsonDocument meta = org.bson.BsonDocument.parse(txt);
+                                  String id = meta.containsKey("itemId") ? meta.getString("itemId").getValue() : p.getFileName().toString().replaceFirst("\\.json$", "");
+                                  String name = meta.containsKey("name") ? meta.getString("name").getValue() : "";
+                                  String coords = "";
+                                  if (meta.containsKey("coords")) {
+                                      org.bson.BsonDocument c = meta.getDocument("coords");
+                                      coords = c.getInt32("x").getValue() + "," + c.getInt32("y").getValue() + "," + c.getInt32("z").getValue();
+                                  }
+                                  entries.add(id + " - " + name + (coords.isEmpty() ? "" : " @ " + coords));
+                              } catch (Exception e) {
+                                  entries.add("ERROR: " + p.getFileName().toString() + " - " + e.getMessage());
+                              }
+                          });
+                }
+
+                String[] arr = entries.toArray(new String[0]);
+                ListUserImagesPage page = new ListUserImagesPage(player.getPlayerRef(), this.targetWorld, this.targetBlock, arr, this);
+                player.getPageManager().openCustomPage(player.getReference(), player.getReference().getStore(), page);
+            } catch (Exception e) {
+                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error opening image chooser: " + e.getMessage()));
+            }
+
+            return;
+        }
+
         if ("Upload".equals(data.action)) {
+            Frames.LOGGER.atInfo().log("Received Upload action from player " + player.getDisplayName());
+
             String url = data.url;
                 if (url == null || url.trim().isEmpty()) {
                 player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Please enter a valid URL in the field."));
                 return;
             }
 
-                    player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Downloading image..."));
+               player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Downloading image..."));
             try {
                 int sizeX = 32;
                 int sizeY = 32;

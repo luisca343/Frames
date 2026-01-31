@@ -53,9 +53,9 @@ public class ListFramesCommand extends AbstractPlayerCommand {
                               BsonDocument c = meta.getDocument("coords");
                               coords = c.getInt32("x").getValue() + "," + c.getInt32("y").getValue() + "," + c.getInt32("z").getValue();
                           }
-                          entries.add(id + " — " + name + (coords.isEmpty() ? "" : " @ " + coords));
+                          entries.add(id + " - " + name + (coords.isEmpty() ? "" : " @ " + coords));
                       } catch (Exception e) {
-                          entries.add("ERROR: " + p.getFileName().toString() + " — " + e.getMessage());
+                          entries.add("ERROR: " + p.getFileName().toString() + " - " + e.getMessage());
                       }
                   });
 
