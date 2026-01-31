@@ -43,13 +43,15 @@ public class ListUserImagesPage extends InteractiveCustomUIPage<ListUserImagesPa
     private final PlayerRef playerRef;
     private final World world;
     private final BlockPosition targetBlock;
+    private final InteractiveCustomUIPage<?> returnPage;
 
-    public ListUserImagesPage(@Nonnull PlayerRef playerRef, @Nonnull World world, @Nonnull BlockPosition targetBlock, @Nonnull String[] entries) {
+    public ListUserImagesPage(@Nonnull PlayerRef playerRef, @Nonnull World world, @Nonnull BlockPosition targetBlock, @Nonnull String[] entries, @Nonnull InteractiveCustomUIPage<?> returnPage) {
         super(playerRef, CustomPageLifetime.CanDismiss, ListData.CODEC);
         this.entries = entries != null ? entries : new String[0];
         this.playerRef = playerRef;
         this.world = world;
         this.targetBlock = targetBlock;
+        this.returnPage = returnPage;
     }
 
     @Override
@@ -101,11 +103,16 @@ public class ListUserImagesPage extends InteractiveCustomUIPage<ListUserImagesPa
                         String entry = entries[idx];
                         String id = entry.contains(" - ") ? entry.split(" - ", 2)[0] : entry;
 
-                        // Re-open ImageDownloadPage with the selected id prefilled as state key
+                        // If we were passed the original ImageDownloadPage instance, set its state key and reopen it.
                         try {
-                            this.close();
-                            player.getPageManager().openCustomPage(player.getReference(), player.getReference().getStore(),
-                                    new ImageDownloadPage(playerRef, world, targetBlock, id));
+                            if (returnPage != null && returnPage instanceof ImageDownloadPage) {
+                                ((ImageDownloadPage) returnPage).setSelectedStateKey(id);
+                                player.getPageManager().openCustomPage(ref, store, returnPage);
+                            } else {
+                                // Fallback: open a new ImageDownloadPage instance with the selected id
+                                player.getPageManager().openCustomPage(player.getReference(), player.getReference().getStore(),
+                                        new ImageDownloadPage(playerRef, world, targetBlock, id));
+                            }
                         } catch (Exception e) {
                             player.sendMessage(Message.raw("Failed to reopen Image page: " + e.getMessage()));
                         }

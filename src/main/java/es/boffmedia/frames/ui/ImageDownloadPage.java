@@ -59,7 +59,7 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
     private final PlayerRef playerRef;
     private final World targetWorld;
     private final BlockPosition targetBlock;
-    private final String initialStateKey;
+    private String initialStateKey;
 
     public ImageDownloadPage(@Nonnull PlayerRef playerRef, @Nonnull World world, @Nonnull BlockPosition targetBlock) {
         this(playerRef, world, targetBlock, null);
@@ -71,6 +71,10 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
         this.targetWorld = world;
         this.targetBlock = targetBlock;
         this.initialStateKey = initialStateKey;
+    }
+
+    public void setSelectedStateKey(String key) {
+        this.initialStateKey = key;
     }
 
     @Override
@@ -205,7 +209,7 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                 }
 
                 String[] arr = entries.toArray(new String[0]);
-                ListUserImagesPage page = new ListUserImagesPage(player.getPlayerRef(), this.targetWorld, this.targetBlock, arr);
+                ListUserImagesPage page = new ListUserImagesPage(player.getPlayerRef(), this.targetWorld, this.targetBlock, arr, this);
                 player.getPageManager().openCustomPage(player.getReference(), player.getReference().getStore(), page);
             } catch (Exception e) {
                 player.sendMessage(com.hypixel.hytale.server.core.Message.raw("Error opening image chooser: " + e.getMessage()));
