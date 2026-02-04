@@ -4,6 +4,8 @@ import es.boffmedia.frames.AssetJsonBuilder;
 import es.boffmedia.frames.Frames;
 
 import java.awt.image.BufferedImage;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,8 +30,30 @@ public final class FrameItemGenerator {
         return sb.toString();
     }
 
+    private static BufferedImage padToMultipleOf32(BufferedImage image) {
+        if (image == null) return null;
+        int w = image.getWidth();
+        int h = image.getHeight();
+        int newW = ((w + 31) / 32) * 32;
+        int newH = ((h + 31) / 32) * 32;
+
+        Frames.LOGGER.atInfo().log("Padding image from " + w + "x" + h + " to " + newW + "x" + newH);
+
+        if (newW == w && newH == h) return image;
+        BufferedImage out = new BufferedImage(newW, newH, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = out.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.drawImage(image, 0, 0, null);
+        g.dispose();
+        return out;
+    }
+
     public static String addImageAsItemFromImage(BufferedImage image, String providedName, int blocksX, int blocksY, Path modsRoot) throws IOException {
         if (image == null) throw new IOException("Provided image is null");
+
+        // We need to pad the image to a multiple of 32 pixels in both dimensions to avoid a bug in Hytale's rendering engine
+        image = padToMultipleOf32(image);
 
         int imgPixelsX = image.getWidth();
         int imgPixelsY = image.getHeight();
