@@ -4,17 +4,17 @@ public final class AssetJsonBuilder {
 
     private AssetJsonBuilder() {}
 
-    public static String buildBlockymodel(String baseName, int sizeX, int sizeY, int yOffset, int zOffset) {
+    public static String buildBlockymodel(String baseName, int sizeX, int sizeY, int yPosition, int zPosition, int offsetX, int offsetY, int offsetZ) {
         return "{\n" +
                 "  \"nodes\": [\n" +
                 "    {\n" +
                 "      \"id\": \"1\",\n" +
                 "      \"name\": \"cube\",\n" +
-                "      \"position\": {\"x\": 0, \"y\": " + yOffset + ", \"z\": " + zOffset + "},\n" +
+                "      \"position\": {\"x\": 0, \"y\": " + yPosition + ", \"z\": " + zPosition + "},\n" +
                 "      \"orientation\": {\"x\": 0, \"y\": 0, \"z\": 0, \"w\": 1},\n" +
                 "      \"shape\": {\n" +
                 "        \"type\": \"box\",\n" +
-                "        \"offset\": {\"x\": 0, \"y\": 0, \"z\": 0},\n" +
+                "        \"offset\": {\"x\": " + offsetX + ", \"y\": " + offsetY + ", \"z\": " + offsetZ + "},\n" +
                 "        \"stretch\": {\"x\": 1, \"y\": 1, \"z\": 1},\n" +
                 "        \"settings\": {\n" +
                 "          \"isPiece\": false,\n" +

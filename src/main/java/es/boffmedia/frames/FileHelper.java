@@ -97,7 +97,7 @@ public final class FileHelper {
         return ImageProcessor.saveImageToMods(img, fileName, sizeKey, MODS_ROOT);
     }
 
-    public static String addImageAsItemFromImage(BufferedImage image, String providedName, int blocksX, int blocksY) throws IOException {
-        return FrameItemGenerator.addImageAsItemFromImage(image, providedName, blocksX, blocksY, MODS_ROOT);
+    public static String addImageAsItemFromImage(BufferedImage image, String providedName, int blocksX, int blocksY, String alignment) throws IOException {
+        return FrameItemGenerator.addImageAsItemFromImage(image, providedName, blocksX, blocksY, alignment, MODS_ROOT);
     }
 }

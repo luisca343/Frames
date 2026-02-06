@@ -2,7 +2,7 @@ $C = "../Common.ui";
 
 $C.@PageOverlay {
     $C.@DecoratedContainer {
-        Anchor: (Width: 650, Height: 420);
+        Anchor: (Width: 650, Height: 480);
 
         #Title {
             $C.@Title { @Text = "Picture Frame"; }

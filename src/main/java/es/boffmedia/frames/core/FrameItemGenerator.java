@@ -49,7 +49,7 @@ public final class FrameItemGenerator {
         return out;
     }
 
-    public static String addImageAsItemFromImage(BufferedImage image, String providedName, int blocksX, int blocksY, Path modsRoot) throws IOException {
+    public static String addImageAsItemFromImage(BufferedImage image, String providedName, int blocksX, int blocksY, String alignment, Path modsRoot) throws IOException {
         if (image == null) throw new IOException("Provided image is null");
 
         // We need to pad the image to a multiple of 32 pixels in both dimensions to avoid a bug in Hytale's rendering engine
@@ -90,11 +90,20 @@ public final class FrameItemGenerator {
         Path modelOut = modsRoot.resolve(Paths.get("Common", "Blocks", "Frames", baseName + ".blockymodel"));
         Files.createDirectories(modelOut.getParent());
 
-        float zOffset = ((float) sizeX) / (-blocksX * 2);
+        float zPosition = ((float) sizeX) / (-blocksX * 2);
         int computedBlocksY = Math.max(1, Math.round((float) blocksX * (float) imgPixelsY / (float) imgPixelsX));
-        float yOffset = ((float) sizeY) / ((float) computedBlocksY * 2.0f);
+        float yPosition = ((float) sizeY) / ((float) computedBlocksY * 2.0f);
 
-        String modelJson = AssetJsonBuilder.buildBlockymodel(baseName, sizeX, sizeY, (int) yOffset, (int) zOffset);
+        int offsetX = 0;
+        int offsetY = 0;
+        int offsetZ = 0;
+        if (alignment != null && "BOTTOM_LEFT".equalsIgnoreCase(alignment)) {
+            offsetX = Math.round(((float) sizeX / 2.0f) - Math.abs(zPosition));
+            offsetY = Math.round(((float) sizeY / 2.0f) - Math.abs(yPosition));
+            offsetZ = 0;
+        }
+
+        String modelJson = AssetJsonBuilder.buildBlockymodel(baseName, sizeX, sizeY, (int) yPosition, (int) zPosition, offsetX, offsetY, offsetZ);
         Files.writeString(modelOut, modelJson);
 
         Path itemOut = modsRoot.resolve(Paths.get("Server", "Item", "Items", "Furniture", "Frames", "Boff_Frame_" + baseName + ".json"));

@@ -283,7 +283,7 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                     } catch (Exception ignored) {}
 
                     // Maintain aspect ratio: blocksY is derived from image dimensions when saving; pass blocksX only
-                    String itemId = FileHelper.addImageAsItemFromImage(img, data.name, blocksX, blocksX);
+                    String itemId = FileHelper.addImageAsItemFromImage(img, data.name, blocksX, blocksX, data.alignment);
 
                     // Write metadata JSON for the created frame into mods/BoffmediaFrames/Frames/<itemId>.json
                     try {
