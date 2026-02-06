@@ -44,7 +44,7 @@ public final class FrameItemGenerator {
         Graphics2D g = out.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g.drawImage(image, 0, 0, null);
+        g.drawImage(image, 0, 0, newW, newH, null);
         g.dispose();
         return out;
     }
