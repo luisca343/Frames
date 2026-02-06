@@ -90,7 +90,10 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
         try {
             DropdownEntryInfo[] alignEntries = new DropdownEntryInfo[] {
                 new DropdownEntryInfo(LocalizableString.fromString("Centered"), "CENTERED"),
-                new DropdownEntryInfo(LocalizableString.fromString("Bottom Left"), "BOTTOM_LEFT")
+                new DropdownEntryInfo(LocalizableString.fromString("Bottom Left"), "BOTTOM_LEFT"), 
+                new DropdownEntryInfo(LocalizableString.fromString("Bottom Right"), "BOTTOM_RIGHT"),
+                new DropdownEntryInfo(LocalizableString.fromString("Top Left"), "TOP_LEFT"),
+                new DropdownEntryInfo(LocalizableString.fromString("Top Right"), "TOP_RIGHT")
             };
             uiCommandBuilder.set("#AlignmentSelect.Entries", alignEntries);
             uiCommandBuilder.set("#AlignmentSelect.Value", "CENTERED");

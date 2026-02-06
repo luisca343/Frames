@@ -97,10 +97,38 @@ public final class FrameItemGenerator {
         int offsetX = 0;
         int offsetY = 0;
         int offsetZ = 0;
-        if (alignment != null && "BOTTOM_LEFT".equalsIgnoreCase(alignment)) {
-            offsetX = Math.round(((float) sizeX / 2.0f) - Math.abs(zPosition));
-            offsetY = Math.round(((float) sizeY / 2.0f) - Math.abs(yPosition));
-            offsetZ = 0;
+        if (alignment != null) {
+            switch (alignment.toUpperCase()) {
+                case "BOTTOM_LEFT":
+                    offsetX = Math.round(((float) sizeX / 2.0f) - Math.abs(zPosition));
+                    offsetY = Math.round(((float) sizeY / 2.0f) - Math.abs(yPosition));
+                    offsetZ = 0;
+                    break;
+                    
+                case "BOTTOM_RIGHT":
+                    offsetX = Math.round(-((float) sizeX / 2.0f) + Math.abs(zPosition));
+                    offsetY = Math.round(((float) sizeY / 2.0f) - Math.abs(yPosition));
+                    offsetZ = 0;
+                    break;
+                    
+                case "TOP_LEFT":
+                    offsetX = Math.round(((float) sizeX / 2.0f) - Math.abs(zPosition));
+                    offsetY = Math.round(-((float) sizeY / 2.0f) + Math.abs(yPosition));
+                    offsetZ = 0;
+                    break;
+                    
+                case "TOP_RIGHT":
+                    offsetX = Math.round(-((float) sizeX / 2.0f) + Math.abs(zPosition));
+                    offsetY = Math.round(-((float) sizeY / 2.0f) + Math.abs(yPosition));
+                    offsetZ = 0;
+                    break;
+                    
+                default:
+                    offsetX = 0;
+                    offsetY = 0;
+                    offsetZ = 0;
+                    break;
+            }
         }
 
         String modelJson = AssetJsonBuilder.buildBlockymodel(baseName, sizeX, sizeY, (int) yPosition, (int) zPosition, offsetX, offsetY, offsetZ);
