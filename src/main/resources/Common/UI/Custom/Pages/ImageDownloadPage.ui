@@ -114,6 +114,26 @@ $C.@PageOverlay {
                 }
             }
 
+            Group { Anchor: (Height: 12); }
+
+            Group {
+                LayoutMode: Left;
+                Anchor: (Height: 52);
+
+                Label {
+                    Text: "Alignment:";
+                    Anchor: (Width: 140);
+                    Style: (FontSize: 15, TextColor: #96a9be, VerticalAlignment: Center, RenderBold: true);
+                }
+
+                DropdownBox #AlignmentSelect {
+                    FlexWeight: 1;
+                    Anchor: (Height: 44);
+                    Padding: (Horizontal: 12);
+                    Style: $C.@DefaultDropdownBoxStyle;
+                }
+            }
+
             Group { Anchor: (Height: 14); }
 
             Group {

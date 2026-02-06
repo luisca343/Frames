@@ -22,6 +22,8 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.ui.LocalizableString;
+import com.hypixel.hytale.server.core.ui.DropdownEntryInfo;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,6 +42,7 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
         public String name;
         public String sizeXBlocks;
         public String stateKey;
+        public String alignment;
 
         public static final BuilderCodec<ImageDownloadData> CODEC = ((BuilderCodec.Builder<ImageDownloadData>) ((BuilderCodec.Builder<ImageDownloadData>)
                 BuilderCodec.builder(ImageDownloadData.class, ImageDownloadData::new))
@@ -52,6 +55,8 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                 .append(new KeyedCodec<>("@SizeXInput", Codec.STRING), (ImageDownloadData o, String v) -> o.sizeXBlocks = v, (ImageDownloadData o) -> o.sizeXBlocks)
                 .add()
                 .append(new KeyedCodec<>("@StateKey", Codec.STRING), (ImageDownloadData o, String v) -> o.stateKey = v, (ImageDownloadData o) -> o.stateKey)
+                .add()
+                .append(new KeyedCodec<>("@AlignmentSelect", Codec.STRING), (ImageDownloadData o, String v) -> o.alignment = v, (ImageDownloadData o) -> o.alignment)
                 .add())
                 .build();
     }
@@ -81,13 +86,24 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
     public void build(@Nonnull Ref<EntityStore> ref, @Nonnull UICommandBuilder uiCommandBuilder, @Nonnull UIEventBuilder uiEventBuilder, @Nonnull Store<EntityStore> store) {
         uiCommandBuilder.append("Pages/ImageDownloadPage.ui");
 
+        // Populate alignment dropdown entries and set default value
+        try {
+            DropdownEntryInfo[] alignEntries = new DropdownEntryInfo[] {
+                new DropdownEntryInfo(LocalizableString.fromString("Centered"), "CENTERED"),
+                new DropdownEntryInfo(LocalizableString.fromString("Bottom Left"), "BOTTOM_LEFT")
+            };
+            uiCommandBuilder.set("#AlignmentSelect.Entries", alignEntries);
+            uiCommandBuilder.set("#AlignmentSelect.Value", "CENTERED");
+        } catch (Exception ignored) {}
+
         // Bind the Upload button; send the Url input's value using the documented @<ControlId> mapping
         uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#UploadButton",
             new EventData()
                 .append("Action", "Upload")
                 .append("@UrlInput", "#UrlInput.Value")
                 .append("@NameInput", "#NameInput.Value")
-                .append("@SizeXInput", "#SizeXInput.Value"),
+                .append("@SizeXInput", "#SizeXInput.Value")
+                .append("@AlignmentSelect", "#AlignmentSelect.Value"),
                 false);
 
         // Bind the Apply button: send the selected StateKey (or item id) without downloading
@@ -146,6 +162,7 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                                                 try { uiCommandBuilder.set("#UrlInput.Value", murl); } catch (Exception ignore) {}
                                                 try { uiCommandBuilder.set("#SizeXInput.Value", Integer.toString(mbx)); } catch (Exception ignore) {}
                                                 try { uiCommandBuilder.set("#StateKeyInput.Value", itemId); } catch (Exception ignore) {}
+                                                try { uiCommandBuilder.set("#AlignmentSelect.Value", meta.containsKey("alignment") ? meta.getString("alignment").getValue() : "CENTERED"); } catch (Exception ignore) {}
                                             } catch (Exception e) {
                                                 Frames.LOGGER.atWarning().withCause(e).log("Failed to read referenced metadata: " + metaPath);
                                             }
@@ -270,7 +287,7 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
 
                     // Write metadata JSON for the created frame into mods/BoffmediaFrames/Frames/<itemId>.json
                     try {
-                        FileHelper.writeFrameMetadata(itemId, data.name, data.url, this.targetBlock.x, this.targetBlock.y, this.targetBlock.z, blocksX);
+                        FileHelper.writeFrameMetadata(itemId, data.name, data.url, this.targetBlock.x, this.targetBlock.y, this.targetBlock.z, blocksX, data.alignment);
                     } catch (IOException ioe) {
                         Frames.LOGGER.atWarning().withCause(ioe).log("Failed to write frame metadata: " + ioe.getMessage());
                     }
@@ -372,6 +389,7 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                         String name = null;
                         String url = null;
                         int blocksX = 1;
+                        String alignment = null;
                         try {
                             Path metaPath = FileHelper.MODS_ROOT.resolve("Frames").resolve(itemId + ".json");
                             if (Files.exists(metaPath) && Files.isRegularFile(metaPath)) {
@@ -379,6 +397,7 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                                 org.bson.BsonDocument meta = org.bson.BsonDocument.parse(txt);
                                 if (meta.containsKey("name")) name = meta.getString("name").getValue();
                                 if (meta.containsKey("url")) url = meta.getString("url").getValue();
+                                if (meta.containsKey("alignment")) alignment = meta.getString("alignment").getValue();
                                 if (meta.containsKey("frames")) {
                                     org.bson.BsonArray fa = meta.getArray("frames");
                                     if (fa.size() > 0) {
@@ -406,7 +425,7 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                         }
 
                         try {
-                            FileHelper.writeFrameMetadata(itemId, name, url, tx, ty, tz, blocksX);
+                            FileHelper.writeFrameMetadata(itemId, name, url, tx, ty, tz, blocksX, alignment);
                         } catch (Exception e) {
                             Frames.LOGGER.atWarning().withCause(e).log("Failed to write frame metadata: " + e.getMessage());
                         }
