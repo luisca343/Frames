@@ -46,9 +46,6 @@ public final class AssetJsonBuilder {
                 "    \"Name\": \"frames." + baseName + ".name\",\n" +
                 "    \"Description\": \"frames." + baseName + ".description\"\n" +
                 "  },\n" +
-                "  \"Categories\": [\n" +
-                "    \"Blocks.Deco\"\n" +
-                "  ],\n" +
                 "  \"BlockType\": {\n" +
                 "    \"InteractionHint\": \"frames.use_hint\",\n" +
                 "    \"Material\": \"Solid\",\n" +
