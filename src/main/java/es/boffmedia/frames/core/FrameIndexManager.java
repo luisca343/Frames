@@ -136,7 +136,7 @@ public final class FrameIndexManager {
         }
     }
 
-    public static void writeFrameMetadata(String itemId, String name, String url, int x, int y, int z, int blocksX, Path modsRoot) throws IOException {
+    public static void writeFrameMetadata(String itemId, String name, String url, int x, int y, int z, int blocksX, String alignment, Path modsRoot) throws IOException {
         Path metaDir = modsRoot.resolve("Frames");
         Files.createDirectories(metaDir);
         Path metaFile = metaDir.resolve(itemId + ".json");
@@ -158,6 +158,7 @@ public final class FrameIndexManager {
         if (!doc.containsKey("itemId")) doc.append("itemId", new BsonString(itemId == null ? "" : itemId));
         if (name != null && !name.isEmpty()) doc.append("name", new BsonString(name)); else if (!doc.containsKey("name")) doc.append("name", new BsonString(""));
         if (url != null && !url.isEmpty()) doc.append("url", new BsonString(url)); else if (!doc.containsKey("url")) doc.append("url", new BsonString(""));
+        if (alignment != null && !alignment.isEmpty()) doc.append("alignment", new BsonString(alignment));
         if (!doc.containsKey("createdAt")) doc.append("createdAt", new BsonString(java.time.Instant.now().toString()));
 
         BsonDocument frameEntry = new BsonDocument();
