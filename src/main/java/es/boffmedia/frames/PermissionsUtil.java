@@ -12,6 +12,8 @@ public final class PermissionsUtil {
 
     // Permission node to allow deleting frame image states
     public static final String PERMISSION_DELETE_FRAME = "boffmedia.frames.delete";
+    // Permission node to allow uploading images / creating new frames
+    public static final String PERMISSION_UPLOAD_FRAME = "boffmedia.frames.upload";
 
     private PermissionsUtil() {}
 
@@ -34,5 +36,13 @@ public final class PermissionsUtil {
         final UUID uuid = ((CommandSender) player).getUuid();
         if (hasNegatedPermission(player, PERMISSION_DELETE_FRAME)) return false;
         return perms.hasPermission(uuid, PERMISSION_DELETE_FRAME);
+    }
+
+    public static boolean canUploadFrames(@Nonnull final Player player) {
+        if (isAdmin(player)) return true;
+        final PermissionsModule perms = PermissionsModule.get();
+        final UUID uuid = ((CommandSender) player).getUuid();
+        if (hasNegatedPermission(player, PERMISSION_UPLOAD_FRAME)) return false;
+        return perms.hasPermission(uuid, PERMISSION_UPLOAD_FRAME);
     }
 }

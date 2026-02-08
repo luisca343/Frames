@@ -37,6 +37,18 @@ Key features:
 - Delete removes the item's metadata, generated item JSON, blockymodel, texture and removes any state definitions referencing the id.
 - The Picture Frame UI now includes a Remove button which replaces the frame with a normal `Boff_Frame_1x1` and clears metadata/index entries for that coordinate.
 
+### Alignment
+
+The Picture Frame UI supports alignment options when the image's aspect ratio differs from the selected block size. The available alignment values are `CENTERED`, `BOTTOM_LEFT`, `BOTTOM_RIGHT`, `TOP_LEFT`, and `TOP_RIGHT`. You can choose alignment from the dropdown in the UI when uploading.
+
+### Permissions
+
+To allow a specific player to upload images (create new frame items) grant them the `boffmedia.frames.upload` permission. Example using the server permission command:
+
+```
+/perm user add [UUID] boffmedia.frames.upload
+```
+
 ## Development notes
 
 - The plugin writes asset files into `mods/BoffmediaFrames/` so the server/client will load them; a server restart/save may be required on first use for assets to become available.

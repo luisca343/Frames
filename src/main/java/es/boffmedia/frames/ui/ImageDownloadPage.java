@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import es.boffmedia.frames.FileHelper;
 import es.boffmedia.frames.Frames;
+import es.boffmedia.frames.PermissionsUtil;
 // Permissions check removed; states list deprecated
 import es.boffmedia.frames.interactions.UseFrameInteraction;
 
@@ -94,6 +95,7 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                 new DropdownEntryInfo(LocalizableString.fromString("Bottom Right"), "BOTTOM_RIGHT"),
                 new DropdownEntryInfo(LocalizableString.fromString("Top Left"), "TOP_LEFT"),
                 new DropdownEntryInfo(LocalizableString.fromString("Top Right"), "TOP_RIGHT")
+                
             };
             uiCommandBuilder.set("#AlignmentSelect.Entries", alignEntries);
             uiCommandBuilder.set("#AlignmentSelect.Value", "CENTERED");
@@ -240,6 +242,11 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
 
         if ("Upload".equals(data.action)) {
             Frames.LOGGER.atInfo().log("Received Upload action from player " + player.getDisplayName());
+
+            if (!PermissionsUtil.canUploadFrames(player)) {
+                player.sendMessage(com.hypixel.hytale.server.core.Message.raw("You do not have permission to upload images."));
+                return;
+            }
 
             String url = data.url;
                 if (url == null || url.trim().isEmpty()) {
