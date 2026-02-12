@@ -73,12 +73,12 @@ public final class FileHelper {
         return FrameDocumentManager.removeImageState(sizeKey, stateKey, MODS_ROOT);
     }
 
-    public static void writeFrameMetadata(String itemId, String name, String url, int x, int y, int z, int blocksX, String alignment) throws IOException {
-        FrameIndexManager.writeFrameMetadata(itemId, name, url, x, y, z, blocksX, alignment, MODS_ROOT);
+    public static void writeFrameMetadata(String itemId, String name, String url, int x, int y, int z, int blocksX, String alignment, String creatorUuid, boolean share) throws IOException {
+        FrameIndexManager.writeFrameMetadata(itemId, name, url, x, y, z, blocksX, alignment, creatorUuid, share, MODS_ROOT);
     }
 
-    public static void registerFrameInstanceInIndex(String itemId, String metaFileName, int x, int y, int z, int blocksX) throws IOException {
-        FrameIndexManager.registerFrameInstanceInIndex(itemId, metaFileName, x, y, z, blocksX, MODS_ROOT);
+    public static void registerFrameInstanceInIndex(String itemId, String metaFileName, int x, int y, int z, int blocksX, String creatorUuid, boolean share) throws IOException {
+        FrameIndexManager.registerFrameInstanceInIndex(itemId, metaFileName, x, y, z, blocksX, creatorUuid, share, MODS_ROOT);
     }
 
     public static void removeInstancesAtCoords(int x, int y, int z) throws IOException {

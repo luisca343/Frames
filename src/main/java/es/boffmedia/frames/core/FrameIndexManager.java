@@ -19,7 +19,7 @@ import java.util.List;
 public final class FrameIndexManager {
     private FrameIndexManager() {}
 
-    public static void registerFrameInstanceInIndex(String itemId, String metaFileName, int x, int y, int z, int blocksX, Path modsRoot) throws IOException {
+    public static void registerFrameInstanceInIndex(String itemId, String metaFileName, int x, int y, int z, int blocksX, String creatorUuid, boolean share, Path modsRoot) throws IOException {
         Path indexFile = modsRoot.resolve("FramesIndex.json");
         BsonDocument indexDoc;
         if (Files.exists(indexFile)) {
@@ -41,6 +41,8 @@ public final class FrameIndexManager {
 
         BsonDocument entry = new BsonDocument();
         entry.append("metaFile", new BsonString(metaFileName == null ? "" : metaFileName));
+        entry.append("creator", new BsonString(creatorUuid == null ? "" : creatorUuid));
+        entry.append("share", new org.bson.BsonBoolean(share));
         BsonDocument coords = new BsonDocument();
         coords.append("x", new org.bson.BsonInt32(x));
         coords.append("y", new org.bson.BsonInt32(y));
@@ -136,7 +138,7 @@ public final class FrameIndexManager {
         }
     }
 
-    public static void writeFrameMetadata(String itemId, String name, String url, int x, int y, int z, int blocksX, String alignment, Path modsRoot) throws IOException {
+    public static void writeFrameMetadata(String itemId, String name, String url, int x, int y, int z, int blocksX, String alignment, String creatorUuid, boolean share, Path modsRoot) throws IOException {
         Path metaDir = modsRoot.resolve("Frames");
         Files.createDirectories(metaDir);
         Path metaFile = metaDir.resolve(itemId + ".json");
@@ -182,7 +184,7 @@ public final class FrameIndexManager {
         Files.writeString(metaFile, doc.toJson(settings));
 
         try {
-            registerFrameInstanceInIndex(itemId, metaFile.getFileName().toString(), x, y, z, blocksX, modsRoot);
+            registerFrameInstanceInIndex(itemId, metaFile.getFileName().toString(), x, y, z, blocksX, creatorUuid, share, modsRoot);
         } catch (Exception e) {
             Frames.LOGGER.atWarning().withCause(e).log("Failed to update frames index: " + e.getMessage());
         }

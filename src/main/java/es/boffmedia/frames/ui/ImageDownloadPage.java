@@ -101,6 +101,12 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
             uiCommandBuilder.set("#AlignmentSelect.Value", "CENTERED");
         } catch (Exception ignored) {}
 
+        // Get the current player for permission/ownership checks
+        Player player = null;
+        try {
+            player = store.getComponent(ref, Player.getComponentType());
+        } catch (Exception ignored) {}
+
         // Bind the Upload button; send the Url input's value using the documented @<ControlId> mapping
         uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#UploadButton",
             new EventData()
@@ -145,6 +151,22 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                                 for (int ai = 0; ai < arr.size(); ai++) {
                                     org.bson.BsonDocument inst = arr.get(ai).asDocument();
                                     if (!inst.containsKey("coords")) continue;
+
+                                    // ownership/share filter: allow if creator == player OR share == true (default true)
+                                    boolean allowed = false;
+                                    String creator = "";
+                                    if (inst.containsKey("creator")) {
+                                        try { creator = inst.getString("creator").getValue(); } catch (Exception ignore) { creator = ""; }
+                                    }
+                                    boolean share = true;
+                                    if (inst.containsKey("share")) {
+                                        try { share = inst.getBoolean("share").getValue(); } catch (Exception ignore) { share = true; }
+                                    }
+                                    String playerUuid = "";
+                                    try { if (player != null) playerUuid = ((com.hypixel.hytale.server.core.command.system.CommandSender) player).getUuid().toString(); } catch (Exception ignore) { playerUuid = ""; }
+                                    if (creator != null && !creator.isEmpty() && creator.equals(playerUuid)) allowed = true;
+                                    else if (share) allowed = true;
+                                    if (!allowed) continue;
                                     org.bson.BsonDocument c = inst.getDocument("coords");
                                     int mx = c.getInt32("x").getValue();
                                     int my = c.getInt32("y").getValue();
@@ -202,14 +224,26 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
 
         if ("Choose".equals(data.action)) {
             // Build entries list from metadata files and open ListUserImagesPage
-            try {
-                Path metaDir = FileHelper.MODS_ROOT.resolve("Frames");
+                try {
+                    Path metaDir = FileHelper.MODS_ROOT.resolve("Frames");
                 if (!Files.exists(metaDir) || !Files.isDirectory(metaDir)) {
                     player.sendMessage(com.hypixel.hytale.server.core.Message.raw("No metadata files found."));
                     return;
                 }
 
                 java.util.List<String> entries = new java.util.ArrayList<>();
+                    // load index once to check creator/share flags per item
+                    org.bson.BsonDocument idxDoc = null;
+                    org.bson.BsonDocument itemsDoc = null;
+                    Path indexFile = FileHelper.MODS_ROOT.resolve("FramesIndex.json");
+                    if (Files.exists(indexFile) && Files.isRegularFile(indexFile)) {
+                        try {
+                            String txt = Files.readString(indexFile);
+                            idxDoc = org.bson.BsonDocument.parse(txt);
+                            if (idxDoc.containsKey("items")) itemsDoc = idxDoc.getDocument("items");
+                        } catch (Exception ignore) { idxDoc = null; itemsDoc = null; }
+                    }
+                    final org.bson.BsonDocument itemsDocFinal = itemsDoc;
                 try (java.util.stream.Stream<Path> stream = Files.list(metaDir)) {
                     stream.filter(p -> Files.isRegularFile(p) && p.getFileName().toString().endsWith(".json"))
                           .forEach(p -> {
@@ -218,6 +252,33 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                                   org.bson.BsonDocument meta = org.bson.BsonDocument.parse(txt);
                                   String id = meta.containsKey("itemId") ? meta.getString("itemId").getValue() : p.getFileName().toString().replaceFirst("\\.json$", "");
                                   String name = meta.containsKey("name") ? meta.getString("name").getValue() : "";
+                                      
+                                      // determine if this item should be visible to the current player
+                                      boolean allowed = true;
+                                      try {
+                                          if (itemsDocFinal != null && itemsDocFinal.containsKey(id)) {
+                                              org.bson.BsonArray arr = itemsDocFinal.getArray(id);
+                                              allowed = false;
+                                              String playerUuid = "";
+                                              try { if (player != null) playerUuid = ((com.hypixel.hytale.server.core.command.system.CommandSender) player).getUuid().toString(); } catch (Exception ignore) { playerUuid = ""; }
+                                              for (int i = 0; i < arr.size(); i++) {
+                                                  try {
+                                                      org.bson.BsonDocument inst = arr.get(i).asDocument();
+                                                      String creator = inst.containsKey("creator") ? inst.getString("creator").getValue() : "";
+                                                      boolean share = true;
+                                                      if (inst.containsKey("share")) {
+                                                          try { share = inst.getBoolean("share").getValue(); } catch (Exception ignore) { share = true; }
+                                                      }
+                                                      if ((creator != null && !creator.isEmpty() && creator.equals(playerUuid)) || share) { allowed = true; break; }
+                                                  } catch (Exception ignoreInner) { /* continue checking other instances */ }
+                                              }
+                                          } else {
+                                              // no index entry -> assume shared
+                                              allowed = true;
+                                          }
+                                      } catch (Exception ignore) { allowed = true; }
+
+                                      if (!allowed) return;
                                   String coords = "";
                                   if (meta.containsKey("coords")) {
                                       org.bson.BsonDocument c = meta.getDocument("coords");
@@ -297,7 +358,8 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
 
                     // Write metadata JSON for the created frame into mods/BoffmediaFrames/Frames/<itemId>.json
                     try {
-                        FileHelper.writeFrameMetadata(itemId, data.name, data.url, this.targetBlock.x, this.targetBlock.y, this.targetBlock.z, blocksX, data.alignment);
+                        String creator = ((com.hypixel.hytale.server.core.command.system.CommandSender) player).getUuid().toString();
+                        FileHelper.writeFrameMetadata(itemId, data.name, data.url, this.targetBlock.x, this.targetBlock.y, this.targetBlock.z, blocksX, data.alignment, creator, false);
                     } catch (IOException ioe) {
                         Frames.LOGGER.atWarning().withCause(ioe).log("Failed to write frame metadata: " + ioe.getMessage());
                     }
@@ -435,7 +497,8 @@ public class ImageDownloadPage extends InteractiveCustomUIPage<ImageDownloadPage
                         }
 
                         try {
-                            FileHelper.writeFrameMetadata(itemId, name, url, tx, ty, tz, blocksX, alignment);
+                            String creator = ((com.hypixel.hytale.server.core.command.system.CommandSender) player).getUuid().toString();
+                            FileHelper.writeFrameMetadata(itemId, name, url, tx, ty, tz, blocksX, alignment, creator, false);
                         } catch (Exception e) {
                             Frames.LOGGER.atWarning().withCause(e).log("Failed to write frame metadata: " + e.getMessage());
                         }
