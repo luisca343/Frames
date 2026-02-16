@@ -14,6 +14,8 @@ public final class PermissionsUtil {
     public static final String PERMISSION_DELETE_FRAME = "boffmedia.frames.delete";
     // Permission node to allow uploading images / creating new frames
     public static final String PERMISSION_UPLOAD_FRAME = "boffmedia.frames.upload";
+    // Permission node to allow opening the frame UI (default: allowed for all players)
+    public static final String PERMISSION_OPEN_GUI = "boffmedia.frames.open";
 
     private PermissionsUtil() {}
 
@@ -44,5 +46,14 @@ public final class PermissionsUtil {
         final UUID uuid = ((CommandSender) player).getUuid();
         if (hasNegatedPermission(player, PERMISSION_UPLOAD_FRAME)) return false;
         return perms.hasPermission(uuid, PERMISSION_UPLOAD_FRAME);
+    }
+
+    public static boolean canOpenGui(@Nonnull final Player player) {
+        if (isAdmin(player)) return true;
+        final PermissionsModule perms = PermissionsModule.get();
+        final UUID uuid = ((CommandSender) player).getUuid();
+        if (hasNegatedPermission(player, PERMISSION_OPEN_GUI)) return false;
+        // Default: allow opening GUI for all players unless explicitly denied
+        return true;
     }
 }

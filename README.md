@@ -39,7 +39,7 @@ Key features:
 
 ### Alignment
 
-The Picture Frame UI supports alignment options when the image's aspect ratio differs from the selected block size. The available alignment values are `CENTERED`, `BOTTOM_LEFT`, `BOTTOM_RIGHT`, `TOP_LEFT`, and `TOP_RIGHT`. You can choose alignment from the dropdown in the UI when uploading.
+The Picture Frame UI supports alignment options when the image's aspect ratio differs from the selected block size. The available alignment values are `CENTERED`, `BOTTOM_LEFT`, `BOTTOM_CENTER`, `BOTTOM_RIGHT`, `TOP_LEFT`, `TOP_CENTER`, and `TOP_RIGHT`. You can choose alignment from the dropdown in the UI when uploading.
 
 ### Permissions
 
@@ -48,6 +48,8 @@ To allow a specific player to upload images (create new frame items) grant them 
 ```
 /perm user add [UUID] boffmedia.frames.upload
 ```
+
+To restrict who can open the Picture Frame UI, use the `boffmedia.frames.open` permission. By default the UI is available to all players; use a negated permission to deny access to specific users (for example `-boffmedia.frames.open`).
 
 ## Development notes
 

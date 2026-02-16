@@ -111,8 +111,20 @@ public final class FrameItemGenerator {
                     offsetZ = 0;
                     break;
                     
+                case "BOTTOM_CENTER":
+                    offsetX = 0;
+                    offsetY = Math.round(((float) sizeY / 2.0f) - Math.abs(yPosition));
+                    offsetZ = 0;
+                    break;
+                    
                 case "TOP_LEFT":
                     offsetX = Math.round(((float) sizeX / 2.0f) - Math.abs(zPosition));
+                    offsetY = Math.round(-((float) sizeY / 2.0f) + Math.abs(yPosition));
+                    offsetZ = 0;
+                    break;
+                    
+                case "TOP_CENTER":
+                    offsetX = 0;
                     offsetY = Math.round(-((float) sizeY / 2.0f) + Math.abs(yPosition));
                     offsetZ = 0;
                     break;

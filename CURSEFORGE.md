@@ -39,9 +39,11 @@ To allow a player to upload images (create new frame items) grant the following 
 /perm user add [UUID] boffmedia.frames.upload
 ```
 
+To restrict who can open the Picture Frame UI, use the `boffmedia.frames.open` permission. By default the UI is available to all players; use a negated permission to deny access to specific users (for example `-boffmedia.frames.open`).
+
 ## Alignment
 
-The Picture Frame UI supports alignment options that control how the image is placed within the frame when the image and frame block size do not match exactly. Available alignment values are: `CENTERED`, `BOTTOM_LEFT`, `BOTTOM_RIGHT`, `TOP_LEFT`, and `TOP_RIGHT`.
+The Picture Frame UI supports alignment options that control how the image is placed within the frame when the image and frame block size do not match exactly. Available alignment values are: `CENTERED`, `BOTTOM_LEFT`, `BOTTOM_CENTER`, `BOTTOM_RIGHT`, `TOP_LEFT`, `TOP_CENTER`, and `TOP_RIGHT`.
 
 ## Credits & Source
 

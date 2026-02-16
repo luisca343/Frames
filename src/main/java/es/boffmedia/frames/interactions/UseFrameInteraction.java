@@ -22,6 +22,8 @@ import es.boffmedia.frames.Frames;
 import es.boffmedia.frames.ui.ImageDownloadPage;
 
 import javax.annotation.Nonnull;
+import com.hypixel.hytale.server.core.Message;
+import es.boffmedia.frames.PermissionsUtil;
 import java.util.function.Supplier;
 
 public class UseFrameInteraction extends OpenCustomUIInteraction {
@@ -39,6 +41,11 @@ public class UseFrameInteraction extends OpenCustomUIInteraction {
         World world = player.getWorld();
         BlockPosition targetBlock = context.getTargetBlock();
 
+
+        if (!PermissionsUtil.canOpenGui(player)) {
+            player.sendMessage(Message.raw("You do not have permission to open the frame UI."));
+            return;
+        }
 
         ImageDownloadPage page = new ImageDownloadPage(playerRef, world, targetBlock);
         player.getPageManager().openCustomPage(player.getReference(), player.getReference().getStore(), page);
