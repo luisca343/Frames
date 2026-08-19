@@ -85,7 +85,7 @@ public final class FrameItemGenerator {
 
         String fileName = baseName + ".png";
         Path out = ImageProcessor.saveImageToMods(image, fileName, sizeKey, modsRoot);
-        String texturePath = "Blocks/Frames/Images/" + fileName;
+        String texturePath = "Blocks/Frames/" + fileName;
 
         Path modelOut = modsRoot.resolve(Paths.get("Common", "Blocks", "Frames", baseName + ".blockymodel"));
         Files.createDirectories(modelOut.getParent());

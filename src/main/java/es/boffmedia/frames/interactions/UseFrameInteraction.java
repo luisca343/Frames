@@ -43,7 +43,7 @@ public class UseFrameInteraction extends OpenCustomUIInteraction {
 
 
         if (!PermissionsUtil.canOpenGui(player)) {
-            player.sendMessage(Message.raw("You do not have permission to open the frame UI."));
+            player.getPlayerRef().sendMessage(Message.raw("You do not have permission to open the frame UI."));
             return;
         }
 

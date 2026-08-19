@@ -99,7 +99,7 @@ public class ListFramesPage extends InteractiveCustomUIPage<ListFramesPage.ListD
                         String entry = entries[idx];
                         String id = entry.contains(" - ") ? entry.split(" - ", 2)[0] : entry;
                         
-                        player.sendMessage(Message.raw(id));
+                        player.getPlayerRef().sendMessage(Message.raw(id));
                     }
                 } catch (Exception ignored) {}
                 this.close();
@@ -110,7 +110,7 @@ public class ListFramesPage extends InteractiveCustomUIPage<ListFramesPage.ListD
                     int idx = Integer.parseInt(data.index != null ? data.index : "-1");
                     if (idx >= 0 && idx < entries.length) {
                         if (!PermissionsUtil.canDeleteFrames(player)) {
-                            player.sendMessage(Message.raw("You do not have permission to delete metadata files."));
+                            player.getPlayerRef().sendMessage(Message.raw("You do not have permission to delete metadata files."));
                             return;
                         }
                         String entry = entries[idx];
@@ -123,10 +123,10 @@ public class ListFramesPage extends InteractiveCustomUIPage<ListFramesPage.ListD
                         try {
                                 if (Files.exists(meta)) {
                                 Files.delete(meta);
-                                player.sendMessage(Message.raw("Metadata file " + id + " has been deleted."));
+                                player.getPlayerRef().sendMessage(Message.raw("Metadata file " + id + " has been deleted."));
                             }
                         } catch (Exception e) {
-                            player.sendMessage(Message.raw("Error deleting metadata: " + e.getMessage()));
+                            player.getPlayerRef().sendMessage(Message.raw("Error deleting metadata: " + e.getMessage()));
                         }
 
                         // 2) Delete generated item JSON
@@ -134,10 +134,10 @@ public class ListFramesPage extends InteractiveCustomUIPage<ListFramesPage.ListD
                             Path item = FileHelper.MODS_ROOT.resolve(Paths.get("Server", "Item", "Items", "Furniture", "Frames", id + ".json"));
                             if (Files.exists(item)) {
                                 Files.delete(item);
-                                player.sendMessage(Message.raw("Item file deleted: " + item.getFileName().toString()));
+                                player.getPlayerRef().sendMessage(Message.raw("Item file deleted: " + item.getFileName().toString()));
                             }
                         } catch (Exception e) {
-                            player.sendMessage(Message.raw("Error deleting item JSON: " + e.getMessage()));
+                            player.getPlayerRef().sendMessage(Message.raw("Error deleting item JSON: " + e.getMessage()));
                         }
 
                         // 3) Delete blockymodel and image files if we can derive the base name
@@ -146,20 +146,20 @@ public class ListFramesPage extends InteractiveCustomUIPage<ListFramesPage.ListD
                                 Path model = FileHelper.MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames", baseName + ".blockymodel"));
                                 if (Files.exists(model)) {
                                     Files.delete(model);
-                                    player.sendMessage(Message.raw("Model deleted: " + model.getFileName().toString()));
+                                    player.getPlayerRef().sendMessage(Message.raw("Model deleted: " + model.getFileName().toString()));
                                 }
                             } catch (Exception e) {
-                                player.sendMessage(Message.raw("Error deleting blockymodel: " + e.getMessage()));
+                                player.getPlayerRef().sendMessage(Message.raw("Error deleting blockymodel: " + e.getMessage()));
                             }
 
                             try {
                                 Path img = FileHelper.MODS_ROOT.resolve(Paths.get("Common", "Blocks", "Frames", "Images", baseName + ".png"));
                                 if (Files.exists(img)) {
                                     Files.delete(img);
-                                    player.sendMessage(Message.raw("Image deleted: " + img.getFileName().toString()));
+                                    player.getPlayerRef().sendMessage(Message.raw("Image deleted: " + img.getFileName().toString()));
                                 }
                             } catch (Exception e) {
-                                player.sendMessage(Message.raw("Error deleting image: " + e.getMessage()));
+                                player.getPlayerRef().sendMessage(Message.raw("Error deleting image: " + e.getMessage()));
                             }
                         }
 
@@ -171,7 +171,7 @@ public class ListFramesPage extends InteractiveCustomUIPage<ListFramesPage.ListD
                                     boolean removed = FileHelper.removeImageState(sk, id);
                                     if (removed) {
                                             anyRemoved = true;
-                                            player.sendMessage(Message.raw("Removed state " + id + " from frame json: " + sk));
+                                            player.getPlayerRef().sendMessage(Message.raw("Removed state " + id + " from frame json: " + sk));
                                         }
                                 } catch (Exception inner) {
                                     // non-fatal per-size failure
@@ -182,7 +182,7 @@ public class ListFramesPage extends InteractiveCustomUIPage<ListFramesPage.ListD
                                 // (but avoid spamming if we've already deleted files above)
                             }
                         } catch (Exception e) {
-                            player.sendMessage(Message.raw("Error removing state definitions: " + e.getMessage()));
+                            player.getPlayerRef().sendMessage(Message.raw("Error removing state definitions: " + e.getMessage()));
                         }
                     }
                 } catch (Exception ignored) {}
