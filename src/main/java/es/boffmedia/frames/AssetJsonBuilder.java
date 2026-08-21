@@ -22,11 +22,12 @@ public final class AssetJsonBuilder {
                 "          \"isStaticBox\": true\n" +
                 "        },\n" +
                 "        \"textureLayout\": {\n" +
-                "          \"back\": { \"angle\": 0 },\n" +
-                "          \"right\": { \"angle\": 0 },\n" +
-                "          \"front\": { \"angle\": 0 },\n" +
-                "          \"left\": { \"angle\": 0 },\n" +
-                "          \"top\": { \"angle\": 0 }\n" +
+                "          \"back\": { \"offset\": { \"x\": 0, \"y\": 0 }, \"mirror\": { \"x\": false, \"y\": false }, \"angle\": 0 },\n" +
+                "          \"right\": { \"offset\": { \"x\": 0, \"y\": 0 }, \"mirror\": { \"x\": false, \"y\": false }, \"angle\": 0 },\n" +
+                "          \"front\": { \"offset\": { \"x\": 0, \"y\": 0 }, \"mirror\": { \"x\": false, \"y\": false }, \"angle\": 0 },\n" +
+                "          \"left\": { \"offset\": { \"x\": 0, \"y\": 0 }, \"mirror\": { \"x\": false, \"y\": false }, \"angle\": 0 },\n" +
+                "          \"top\": { \"offset\": { \"x\": 0, \"y\": 0 }, \"mirror\": { \"x\": false, \"y\": false }, \"angle\": 0 },\n" +
+                "          \"bottom\": { \"offset\": { \"x\": 0, \"y\": 0 }, \"mirror\": { \"x\": false, \"y\": false }, \"angle\": 0 }\n" +
                 "        },\n" +
                 "        \"unwrapMode\": \"custom\",\n" +
                 "        \"visible\": true,\n" +
@@ -41,11 +42,16 @@ public final class AssetJsonBuilder {
     }
 
     public static String buildItemJson(String baseName, String texturePath, float scaleFactor) {
+        // Keep the dynamic item structure aligned with Luisca's working Boff_Frame_1x1
+        // definition. In particular, State.Definitions is required by the frame
+        // interaction/state pipeline; a minimal BlockType JSON can render initially
+        // but is not stable after an asset rebuild.
         return "{\n" +
                 "  \"TranslationProperties\": {\n" +
                 "    \"Name\": \"frames." + baseName + ".name\",\n" +
                 "    \"Description\": \"frames." + baseName + ".description\"\n" +
                 "  },\n" +
+                "  \"Categories\": [\"Blocks.Deco\"],\n" +
                 "  \"BlockType\": {\n" +
                 "    \"InteractionHint\": \"frames.use_hint\",\n" +
                 "    \"Material\": \"Solid\",\n" +
@@ -56,18 +62,28 @@ public final class AssetJsonBuilder {
                 "    \"CustomModelTexture\": [ { \"Texture\": \"" + texturePath + "\" } ],\n" +
                 "    \"HitboxType\": \"Painting\",\n" +
                 "    \"VariantRotation\": \"NESW\",\n" +
+                "    \"Gathering\": { \"Soft\": { \"IsWeaponBreakable\": false } },\n" +
                 "    \"BlockParticleSetId\": \"Wood\",\n" +
                 "    \"BlockSoundSetId\": \"Wood\",\n" +
+                "    \"Support\": { \"North\": [ { \"FaceType\": \"Full\" } ] },\n" +
                 "    \"ParticleColor\": \"#684127\",\n" +
+                "    \"State\": {\n" +
+                "      \"Definitions\": {\n" +
+                "        \"1\": {\n" +
+                "          \"InteractionHint\": \"frames.use_hint\",\n" +
+                "          \"CustomModelTexture\": [ { \"Texture\": \"" + texturePath + "\" } ]\n" +
+                "        }\n" +
+                "      }\n" +
+                "    },\n" +
+                "    \"CubeShadingMode\": \"Standard\",\n" +
                 "    \"Interactions\": { \"Use\": { \"Interactions\": [ { \"Type\": \"Frames_UseFrameInteraction\" } ] } },\n" +
                 "    \"CustomModelScale\": " + scaleFactor + "\n" +
                 "  },\n" +
                 "  \"PlayerAnimationsId\": \"Block\",\n" +
                 "  \"IconProperties\": { \"Scale\": 0.68, \"Rotation\": [22.5, 45, 22.5], \"Translation\": [8.5, -19.7] },\n" +
-                "  \"ResourceTypes\": [],\n" +
-                "  \"Tags\": {},\n" +
-                "  \"Icon\": \"Icons/ItemsGenerated/Boff_Frame_1x1.png\",\n" +
-                "  \"DropOnBreak\": \"Boff_Frame_1x1\"\n" +
+                "  \"ResourceTypes\": [ { \"Id\": \"Fuel\" }, { \"Id\": \"Charcoal\" } ],\n" +
+                "  \"Tags\": { \"Type\": [\"Furniture\"] },\n" +
+                "  \"Icon\": \"Icons/ItemsGenerated/Boff_Frame_1x1.png\"\n" +
                 "}\n";
     }
 }

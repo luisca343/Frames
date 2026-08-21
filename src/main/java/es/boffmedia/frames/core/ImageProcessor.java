@@ -36,7 +36,7 @@ public final class ImageProcessor {
     }
 
     public static Path saveImageToMods(BufferedImage img, String fileName, String sizeKey, Path modsRoot) throws IOException {
-        Path out = modsRoot.resolve(Path.of("Common", "Blocks", "Frames", "Images")).resolve(fileName);
+        Path out = modsRoot.resolve(Path.of("Common", "Blocks", "Frames")).resolve(fileName);
         Files.createDirectories(out.getParent());
         boolean written = ImageIO.write(img, "png", out.toFile());
         if (!written) throw new IOException("ImageIO.write returned false for: " + out.toString());

@@ -21,10 +21,4 @@ Group {
         Anchor: (Width: 80, Height: 32);
         Style: $C.@SecondaryTextButtonStyle;
     }
-    Group { Anchor: (Width: 8); }
-    TextButton #DeleteButton {
-        Text: "DELETE";
-        Anchor: (Width: 80, Height: 32);
-        Style: $C.@CancelTextButtonStyle;
-    }
 }

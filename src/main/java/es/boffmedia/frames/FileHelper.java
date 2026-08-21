@@ -2,6 +2,8 @@ package es.boffmedia.frames;
 
 import es.boffmedia.frames.core.*;
 import org.bson.BsonDocument;
+import org.bson.BsonString;
+import org.bson.json.JsonWriterSettings;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -27,6 +29,40 @@ public final class FileHelper {
                 FrameDocumentManager.ensureDefaultJsonExists(sk, MODS_ROOT);
                 BsonDocument doc = FrameDocumentManager.readDocument(sk, MODS_ROOT);
                 Frames.LOGGER.atInfo().log("Document loaded for " + sk + ": " + (doc != null));
+            }
+
+            // Validate generated item JSONs and ensure BlockType.HitboxType == "Painting"
+            Path itemsDir = MODS_ROOT.resolve(Paths.get("Server", "Item", "Items", "Furniture", "Frames"));
+            if (Files.exists(itemsDir) && Files.isDirectory(itemsDir)) {
+                try (var stream = Files.newDirectoryStream(itemsDir, "*.json")) {
+                    for (Path p : stream) {
+                        try {
+                            String content = Files.readString(p);
+                            BsonDocument itemDoc = BsonDocument.parse(content);
+                            if (itemDoc.containsKey("BlockType")) {
+                                BsonDocument blockType = itemDoc.getDocument("BlockType");
+                                boolean needsUpdate = true;
+                                if (blockType.containsKey("HitboxType")) {
+                                    try {
+                                        String v = blockType.getString("HitboxType").getValue();
+                                        if ("Painting".equals(v)) needsUpdate = false;
+                                    } catch (Exception ignore) {
+                                        // fall through and replace
+                                    }
+                                }
+                                if (needsUpdate) {
+                                    Frames.LOGGER.atInfo().log("Setting HitboxType=Painting in: " + p.toString());
+                                    blockType.put("HitboxType", new BsonString("Painting"));
+                                    itemDoc.put("BlockType", blockType);
+                                    JsonWriterSettings settings = JsonWriterSettings.builder().indent(true).build();
+                                    Files.writeString(p, itemDoc.toJson(settings));
+                                }
+                            }
+                        } catch (Exception ex) {
+                            Frames.LOGGER.atWarning().withCause(ex).log("Failed validating item JSON: " + p.toString() + " -> " + ex.getMessage());
+                        }
+                    }
+                }
             }
         } catch (Exception e) {
             Frames.LOGGER.atSevere().withCause(e).log("Failed to ensure or load frame json: " + e.getMessage());

@@ -4,6 +4,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.server.core.permissions.PermissionsModule;
 import es.boffmedia.frames.interactions.UseFrameInteraction;
 
 import javax.annotation.Nonnull;
@@ -16,6 +17,9 @@ public class Frames extends JavaPlugin {
         super(init);
         LOGGER.atInfo().log("Hello from " + this.getName() + " version " + this.getManifest().getVersion().toString());
         this.getCodecRegistry(Interaction.CODEC.register("Frames_UseFrameInteraction", UseFrameInteraction.class, UseFrameInteraction.CODEC));
+        PermissionsModule.registerPermission(PermissionsUtil.PERMISSION_OPEN_GUI);
+        PermissionsModule.registerPermission(PermissionsUtil.PERMISSION_UPLOAD_FRAME);
+        PermissionsModule.registerPermission(PermissionsUtil.PERMISSION_DELETE_FRAME);
     }
 
     @Override

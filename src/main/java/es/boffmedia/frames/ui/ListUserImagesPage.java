@@ -114,7 +114,7 @@ public class ListUserImagesPage extends InteractiveCustomUIPage<ListUserImagesPa
                                         new ImageDownloadPage(playerRef, world, targetBlock, id));
                             }
                         } catch (Exception e) {
-                            player.sendMessage(Message.raw("Failed to reopen Image page: " + e.getMessage()));
+                            player.getPlayerRef().sendMessage(Message.raw("Failed to reopen Image page: " + e.getMessage()));
                         }
                     }
                 } catch (Exception ignored) {}
@@ -125,7 +125,7 @@ public class ListUserImagesPage extends InteractiveCustomUIPage<ListUserImagesPa
                     int idx = Integer.parseInt(data.index != null ? data.index : "-1");
                     if (idx >= 0 && idx < entries.length) {
                         if (!es.boffmedia.frames.PermissionsUtil.canDeleteFrames(player)) {
-                            player.sendMessage(Message.raw("You do not have permission to delete metadata files."));
+                            player.getPlayerRef().sendMessage(Message.raw("You do not have permission to delete metadata files."));
                             return;
                         }
                         String entry = entries[idx];
@@ -134,10 +134,10 @@ public class ListUserImagesPage extends InteractiveCustomUIPage<ListUserImagesPa
                         try {
                             if (Files.exists(meta)) {
                                 Files.delete(meta);
-                                player.sendMessage(Message.raw("Metadata file " + id + " has been deleted."));
+                                player.getPlayerRef().sendMessage(Message.raw("Metadata file " + id + " has been deleted."));
                             }
                         } catch (Exception e) {
-                            player.sendMessage(Message.raw("Error deleting metadata: " + e.getMessage()));
+                            player.getPlayerRef().sendMessage(Message.raw("Error deleting metadata: " + e.getMessage()));
                         }
                     }
                 } catch (Exception ignored) {}

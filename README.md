@@ -69,3 +69,13 @@ See the source repository for implementation details and feel free to open issue
 ---
 
 For quick reference, see `src/main/java/es/boffmedia/frames/FileHelper.java` for metadata/index behavior and `src/main/java/es/boffmedia/frames/ui/ImageDownloadPage.java` for the in-game UI flow.
+## Hytale Stable 5 / 0.5 compatibility patch
+
+This fork keeps the original Online Picture Frames functionality and updates the plugin manifests to use a server-version-agnostic `ServerVersion: "*"`, including the runtime `mods/BoffmediaFrames/manifest.json` copy. This avoids pinning the generated asset pack to the pre-Stable-5 server build used by the original source.
+
+The Java API surface was audited against the current Hytale 0.5 server documentation; deprecated block accessors are retained where they are still present for compatibility.
+
+
+
+## 2.6.15 Hytale 0.5 fix
+Dynamic .blockymodel and PNG files are now registered as Hytale CommonAssets and sent to clients explicitly. This fixes the black/magenta missing-texture cube that remained after dynamic BlockType loading.

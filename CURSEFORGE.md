@@ -48,3 +48,6 @@ The Picture Frame UI supports alignment options that control how the image is pl
 ## Credits & Source
 
 Source and technical details: [https://github.com/luisca343/Frames](https://github.com/luisca343/Frames)
+
+## Compatibility
+- Hytale 0.5.x / Stable 5 manifest compatibility patch.

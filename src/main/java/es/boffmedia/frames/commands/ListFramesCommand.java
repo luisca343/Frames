@@ -26,9 +26,16 @@ public class ListFramesCommand extends AbstractPlayerCommand {
 
     @Override
     protected void execute(@Nonnull CommandContext commandContext, @Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
-        Player sender = commandContext.senderAs(Player.class);
+        PlayerRef sender = playerRef;
 
-        if (!PermissionsUtil.canDeleteFrames(sender)) {
+        Player player = store.getComponent(ref, Player.getComponentType());
+
+        if (player == null) {
+            sender.sendMessage(Message.raw("Unable to access player entity."));
+            return;
+        }
+
+        if (!PermissionsUtil.canDeleteFrames(player)) {
             sender.sendMessage(Message.raw("You do not have permission to run this command."));
             return;
         }
@@ -62,7 +69,7 @@ public class ListFramesCommand extends AbstractPlayerCommand {
             // Open UI page showing entries
             String[] arr = entries.toArray(new String[0]);
             es.boffmedia.frames.ui.ListFramesPage page = new es.boffmedia.frames.ui.ListFramesPage(playerRef, arr);
-            sender.getPageManager().openCustomPage(sender.getReference(), sender.getReference().getStore(), page);
+            player.getPageManager().openCustomPage(ref, store, page);
         } catch (Exception e) {
             sender.sendMessage(Message.raw("Error listing metadata: " + e.getMessage()));
         }
